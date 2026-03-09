@@ -1,0 +1,1509 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Superficies Sumergidas | PHYSICS — Mecánica de Fluidos</title>
+  <meta name="description" content="Calculadora de fuerzas hidrostáticas sobre superficies planas sumergidas. Centroide, centro de presión y fuerza resultante con diagrama de presiones interactivo.">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🌊</text></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+  <style>
+    body { background: var(--bg); }
+
+    /* ── Accent color for fluids: cyan ── */
+    :root {
+      --fluid-primary:   #0891b2;
+      --fluid-light:     #ecfeff;
+      --fluid-mid:       #cffafe;
+      --fluid-dark:      #164e63;
+      --fluid-water:     rgba(14,116,144,0.18);
+      --fluid-surface:   rgba(14,116,144,0.55);
+    }
+
+    /* ── Canvas container ── */
+    #canvas-wrap {
+      position: relative;
+      background: #f0f9ff;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      overflow: hidden;
+    }
+    #main-canvas {
+      display: block;
+      width: 100%;
+      height: auto;
+    }
+
+    /* ── Result steps ── */
+    .step-block {
+      border-left: 3px solid var(--fluid-primary);
+      padding: 10px 14px;
+      margin-bottom: 10px;
+      background: var(--fluid-light);
+      border-radius: 0 8px 8px 0;
+    }
+    .step-block-title {
+      font-size: 0.72rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: .5px;
+      color: var(--fluid-dark);
+      margin-bottom: 6px;
+    }
+    .step-line {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      padding: 3px 0;
+      border-bottom: 1px solid var(--fluid-mid);
+      font-size: 0.84rem;
+      gap: 8px;
+    }
+    .step-line:last-child { border-bottom: none; }
+    .step-line .label { color: var(--text-muted); flex-shrink: 0; }
+    .step-line .val {
+      font-family: 'Fira Code', monospace;
+      font-size: 0.82rem;
+      color: var(--fluid-dark);
+      font-weight: 600;
+      text-align: right;
+    }
+    .step-line .formula {
+      font-family: 'Fira Code', monospace;
+      font-size: 0.74rem;
+      color: #6b7280;
+      text-align: right;
+    }
+
+    /* ── Summary result badges ── */
+    .result-trio {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 8px;
+      margin-top: 4px;
+    }
+    .rtrio-card {
+      border-radius: 8px;
+      padding: 10px 8px;
+      text-align: center;
+      border: 1px solid var(--border);
+    }
+    .rtrio-label {
+      font-size: 0.68rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .4px;
+      display: block;
+      margin-bottom: 3px;
+    }
+    .rtrio-val {
+      font-size: 1.1rem;
+      font-weight: 800;
+      display: block;
+      font-variant-numeric: tabular-nums;
+    }
+
+    /* ── Fluid quick-select buttons ── */
+    .fluid-btns {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px;
+      margin-top: 8px;
+    }
+    .fbtn {
+      padding: 6px 8px;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+      background: var(--white);
+      font-size: 0.75rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: var(--transition);
+      font-family: 'Inter', sans-serif;
+      text-align: center;
+    }
+    .fbtn:hover { border-color: var(--fluid-primary); background: var(--fluid-light); color: var(--fluid-dark); }
+    .fbtn.active { background: var(--fluid-primary); color: #fff; border-color: var(--fluid-primary); }
+
+    /* ── Dimension inputs dynamic ── */
+    .dim-group { display: none; }
+    .dim-group.visible { display: block; }
+
+    /* ── Angle display ── */
+    .angle-display {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.9rem;
+      font-weight: 700;
+      color: var(--fluid-primary);
+      margin-left: 8px;
+    }
+
+    /* ── Orientation toggle ── */
+    .orient-row {
+      display: flex;
+      gap: 8px;
+      margin-top: 6px;
+    }
+    .orient-btn {
+      flex: 1;
+      padding: 7px;
+      border: 1.5px solid var(--border);
+      border-radius: 6px;
+      background: var(--white);
+      cursor: pointer;
+      font-family: 'Inter', sans-serif;
+      font-size: 0.82rem;
+      font-weight: 600;
+      text-align: center;
+      transition: var(--transition);
+    }
+    .orient-btn.active {
+      border-color: var(--fluid-primary);
+      background: var(--fluid-light);
+      color: var(--fluid-dark);
+    }
+
+    /* ── Formula reference card ── */
+    .formula-ref { font-size: 0.78rem; line-height: 1.8; color: var(--text-main); }
+    .formula-ref .fr-row {
+      display: flex; gap: 8px; padding: 3px 0;
+      border-bottom: 1px solid var(--border); align-items: baseline;
+    }
+    .formula-ref .fr-row:last-child { border-bottom: none; }
+    .formula-ref .sym {
+      min-width: 44px; font-family: 'Fira Code', monospace;
+      font-size: 0.78rem; color: var(--fluid-primary); font-weight: 600;
+    }
+    .formula-ref .eq {
+      font-family: 'Fira Code', monospace;
+      font-size: 0.76rem; color: var(--text-main); flex: 1;
+    }
+
+    /* ── Legend bullets ── */
+    .legend-row {
+      display: flex; align-items: center; gap: 8px;
+      font-size: 0.78rem; color: var(--text-main);
+      padding: 3px 0;
+    }
+    .leg-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+    .leg-line { width: 18px; height: 3px; border-radius: 2px; flex-shrink: 0; }
+
+    /* ── Tabla de resultados ── */
+    .res-table-wrap {
+      overflow-x: auto;
+      margin-top: 14px;
+      border-radius: 8px;
+      border: 1px solid var(--fluid-mid);
+    }
+    .res-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.83rem;
+      min-width: 480px;
+    }
+    .res-table thead tr {
+      background: var(--fluid-dark);
+      color: #fff;
+    }
+    .res-table thead th {
+      padding: 9px 12px;
+      text-align: left;
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: .4px;
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
+    .res-table thead th:last-child { text-align: right; }
+    .res-table tbody tr:nth-child(even) { background: var(--fluid-light); }
+    .res-table tbody tr:hover { background: var(--fluid-mid); }
+    .res-table td {
+      padding: 7px 12px;
+      border-bottom: 1px solid var(--fluid-mid);
+      vertical-align: middle;
+    }
+    .res-table td:first-child {
+      color: var(--text-muted);
+      font-size: 0.75rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .3px;
+      white-space: nowrap;
+    }
+    .res-table td:nth-child(2) {
+      font-weight: 500;
+      color: #374151;
+    }
+    .res-table td:last-child {
+      font-family: 'Fira Code', monospace;
+      font-size: 0.82rem;
+      font-weight: 700;
+      color: var(--fluid-dark);
+      text-align: right;
+      white-space: nowrap;
+    }
+    .res-table .group-row td {
+      background: #f0fdfe;
+      color: var(--fluid-primary);
+      font-size: 0.72rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: .5px;
+      padding: 5px 12px;
+      border-bottom: 1px solid var(--fluid-mid);
+    }
+    .res-table .highlight-row td:last-child {
+      color: #ea580c;
+      font-size: 0.95rem;
+    }
+    .res-table .highlight-cp td:last-child {
+      color: #ef4444;
+      font-size: 0.95rem;
+    }
+    /* Download bar */
+    .download-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 10px;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .download-bar h4 {
+      font-size: 0.78rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .5px;
+      color: var(--text-muted);
+      margin: 0;
+    }
+    .dl-btns { display: flex; gap: 8px; }
+    .dl-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 6px 12px;
+      border-radius: 6px;
+      border: 1.5px solid var(--fluid-primary);
+      background: var(--white);
+      color: var(--fluid-primary);
+      font-size: 0.75rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: var(--transition);
+      font-family: 'Inter', sans-serif;
+      text-decoration: none;
+    }
+    .dl-btn:hover {
+      background: var(--fluid-primary);
+      color: #fff;
+    }
+    .dl-btn svg { flex-shrink: 0; }
+
+    /* ── Warning / error ── */
+    .hyd-error {
+      display: none;
+      background: #fee2e2;
+      border: 1px solid #fca5a5;
+      border-radius: 8px;
+      padding: 10px 14px;
+      font-size: 0.84rem;
+      color: #991b1b;
+      margin-top: 10px;
+    }
+    .hyd-error.visible { display: block; }
+    .hyd-warn {
+      display: none;
+      background: #fef9c3;
+      border: 1px solid #fde047;
+      border-radius: 8px;
+      padding: 8px 14px;
+      font-size: 0.8rem;
+      color: #854d0e;
+      margin-top: 8px;
+    }
+    .hyd-warn.visible { display: block; }
+
+    /* ── Results card hidden until calc ── */
+    #results-card { display: none; }
+
+    @media (max-width: 768px) {
+      .result-trio { grid-template-columns: 1fr 1fr; }
+      .fluid-btns  { grid-template-columns: 1fr 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ── NAVBAR ─────────────────────────────────────────────── -->
+<nav class="nav-physics" role="navigation" aria-label="Navegación principal">
+  <div class="container nav-inner">
+    <a href="index.html" class="nav-logo">PHYSICS<span>.</span></a>
+    <button class="nav-toggle" id="navToggle" aria-expanded="false" aria-controls="navLinks">
+      <span></span><span></span><span></span>
+    </button>
+    <ul class="nav-links" id="navLinks" role="list">
+      <li><a href="index.html">Inicio</a></li>
+      <li><a href="index.html#cursos" class="nav-active">Asignaturas</a></li>
+      <li><a href="calculadora.html">Calculadora</a></li>
+        <li><a href="fluidos.html">Fluidos</a></li>
+      <li><a href="index.html#contacto">Contacto</a></li>
+    </ul>
+    <a href="https://wa.me/593995324419" target="_blank" class="btn btn-primary btn-sm nav-cta" rel="noopener">Reservar clase</a>
+  </div>
+</nav>
+
+<!-- ── TOOL HERO ───────────────────────────────────────────── -->
+<header class="tool-hero">
+  <div class="container">
+    <div class="breadcrumb">
+      <a href="index.html">PHYSICS</a><span>›</span>
+      <span>Mecánica de Fluidos</span>
+    </div>
+    <h1>Superficies Planas <span>Sumergidas</span></h1>
+    <p>Calcula la fuerza hidrostática resultante, el centroide y el centro de presión sobre superficies planas inclinadas. Sistema de referencia en la superficie libre del fluido.</p>
+  </div>
+</header>
+
+<!-- ── MAIN LAYOUT ─────────────────────────────────────────── -->
+<main>
+<div class="container">
+<div class="tool-layout">
+
+  <!-- ══ SIDEBAR ══════════════════════════════════════════════ -->
+  <aside class="tool-sidebar">
+
+    <!-- Tipo de superficie -->
+    <div class="card">
+      <h3 style="font-size:1rem;margin-bottom:14px;color:var(--dark-blue);">Configuración</h3>
+
+      <div class="input-group">
+        <label>Tipo de superficie</label>
+        <select id="surf-type" onchange="onSurfTypeChange()">
+          <option value="rect">▬ Rectángulo</option>
+          <option value="circle">● Círculo</option>
+          <option value="triangle">▲ Triángulo</option>
+          <option value="semicircle">◗ Semicírculo</option>
+          <option value="trapezoid">⏢ Trapecio</option>
+        </select>
+      </div>
+
+      <!-- Rectángulo -->
+      <div class="dim-group visible" id="dims-rect">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+          <div class="input-group">
+            <label>Base b (m)</label>
+            <input type="number" id="rect-b" value="2.0" min="0.01" step="0.1">
+          </div>
+          <div class="input-group">
+            <label>Altura h (m)</label>
+            <input type="number" id="rect-h" value="3.0" min="0.01" step="0.1">
+          </div>
+        </div>
+      </div>
+
+      <!-- Círculo -->
+      <div class="dim-group" id="dims-circle">
+        <div class="input-group">
+          <label>Radio R (m)</label>
+          <input type="number" id="circle-r" value="1.5" min="0.01" step="0.1">
+        </div>
+      </div>
+
+      <!-- Triángulo -->
+      <div class="dim-group" id="dims-triangle">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+          <div class="input-group">
+            <label>Base b (m)</label>
+            <input type="number" id="tri-b" value="2.0" min="0.01" step="0.1">
+          </div>
+          <div class="input-group">
+            <label>Altura h (m)</label>
+            <input type="number" id="tri-h" value="3.0" min="0.01" step="0.1">
+          </div>
+        </div>
+        <div class="input-group" style="margin-top:4px;">
+          <label>Orientación</label>
+          <div class="orient-row">
+            <button class="orient-btn active" id="tri-up" onclick="setOrient('tri','up')">▲ Vértice arriba</button>
+            <button class="orient-btn" id="tri-dn" onclick="setOrient('tri','down')">▽ Vértice abajo</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Semicírculo -->
+      <div class="dim-group" id="dims-semicircle">
+        <div class="input-group">
+          <label>Radio R (m)</label>
+          <input type="number" id="semi-r" value="1.5" min="0.01" step="0.1">
+        </div>
+        <div class="input-group" style="margin-top:4px;">
+          <label>Orientación</label>
+          <div class="orient-row">
+            <button class="orient-btn active" id="semi-top" onclick="setOrient('semi','top')">⌓ Diámetro arriba</button>
+            <button class="orient-btn" id="semi-bot" onclick="setOrient('semi','bottom')">⌒ Diámetro abajo</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Trapecio -->
+      <div class="dim-group" id="dims-trapezoid">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+          <div class="input-group">
+            <label>Base mayor B (m)</label>
+            <input type="number" id="trap-B" value="3.0" min="0.01" step="0.1">
+          </div>
+          <div class="input-group">
+            <label>Base menor b (m)</label>
+            <input type="number" id="trap-b" value="1.5" min="0.01" step="0.1">
+          </div>
+        </div>
+        <div class="input-group">
+          <label>Altura h (m)</label>
+          <input type="number" id="trap-h" value="2.5" min="0.01" step="0.1">
+        </div>
+      </div>
+
+      <!-- Ángulo θ -->
+      <div class="input-group" style="margin-top:8px;">
+        <label>
+          Ángulo θ con la horizontal
+          <span class="angle-display" id="theta-display">60°</span>
+        </label>
+        <input type="range" id="theta-slider" min="10" max="90" value="60"
+          oninput="syncTheta(this.value,'slider')">
+        <input type="number" id="theta-num" value="60" min="10" max="90" step="1"
+          style="margin-top:6px;"
+          oninput="syncTheta(this.value,'num')">
+      </div>
+
+      <!-- Profundidad h_s -->
+      <div class="input-group">
+        <label>Profundidad borde superior h<sub>s</sub> (m)</label>
+        <input type="number" id="h-s" value="2.0" min="0" step="0.1">
+      </div>
+
+      <button class="btn btn-primary" style="width:100%;margin-top:4px;background:var(--fluid-primary);border-color:var(--fluid-primary);" onclick="calcHydro()">
+        Calcular →
+      </button>
+      <div class="hyd-error" id="hyd-error"></div>
+      <div class="hyd-warn"  id="hyd-warn"></div>
+    </div>
+
+    <!-- Fluido -->
+    <div class="card">
+      <h3 style="font-size:0.85rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px;">Fluido</h3>
+      <div class="fluid-btns" id="fluid-btns">
+        <button class="fbtn active" onclick="setFluid(1000,'Agua (20°C)',this)">💧 Agua<br><small>1000 kg/m³</small></button>
+        <button class="fbtn" onclick="setFluid(1025,'Agua de mar',this)">🌊 Mar<br><small>1025 kg/m³</small></button>
+        <button class="fbtn" onclick="setFluid(870,'Aceite hidráulico',this)">🛢 Aceite<br><small>870 kg/m³</small></button>
+        <button class="fbtn" onclick="setFluid(13600,'Mercurio',this)">⚗ Mercurio<br><small>13600 kg/m³</small></button>
+        <button class="fbtn" onclick="setFluid(720,'Gasolina',this)">⛽ Gasolina<br><small>720 kg/m³</small></button>
+        <button class="fbtn" onclick="setFluid(1260,'Glicerina',this)">🧪 Glicerina<br><small>1260 kg/m³</small></button>
+      </div>
+      <div style="margin-top:10px;">
+        <div class="input-group" style="margin-bottom:8px;">
+          <label>Densidad ρ (kg/m³)</label>
+          <input type="number" id="rho-input" value="1000" min="1" step="10">
+        </div>
+        <div class="input-group" style="margin-bottom:0;">
+          <label>Gravedad g (m/s²)</label>
+          <input type="number" id="g-input" value="9.81" min="0.01" step="0.01">
+        </div>
+      </div>
+    </div>
+
+    <!-- Leyenda del diagrama -->
+    <div class="card">
+      <h3 style="font-size:0.85rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px;">Leyenda del diagrama</h3>
+      <div class="legend-row"><span class="leg-dot" style="background:#0891b2;"></span>Superficie libre del fluido</div>
+      <div class="legend-row"><span class="leg-dot" style="background:#93c5fd;border:1.5px solid #3b82f6;"></span>Fluido (presión distribuida)</div>
+      <div class="legend-row"><span class="leg-dot" style="background:#1e3a6e;"></span>Superficie sólida sumergida</div>
+      <div class="legend-row"><span class="leg-dot" style="background:#2563eb;"></span>G — Centroide de la superficie</div>
+      <div class="legend-row"><span class="leg-dot" style="background:#ef4444;"></span>CP — Centro de presión</div>
+      <div class="legend-row"><span class="leg-line" style="background:#f97316;"></span>F<sub>R</sub> — Fuerza resultante (⊥ superficie)</div>
+      <div class="legend-row"><span class="leg-line" style="background:#6b7280;border-top:2px dashed #6b7280;height:0;"></span>Cotas de profundidad</div>
+      <div style="height:8px;"></div>
+      <p style="font-size:0.75rem;color:var(--text-muted);line-height:1.6;margin:0;">
+        <strong>Vista izquierda:</strong> sección transversal inclinada.<br>
+        <strong>Vista derecha:</strong> diagrama de presiones — el ancho es proporcional a la presión en cada punto de la superficie.
+      </p>
+    </div>
+
+    <!-- Referencia de fórmulas -->
+    <div class="card">
+      <h3 style="font-size:0.85rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px;">Fórmulas clave</h3>
+      <div class="formula-ref">
+        <div class="fr-row"><span class="sym">h_c</span><span class="eq">= ȳ_c · sin(θ)</span></div>
+        <div class="fr-row"><span class="sym">F_R</span><span class="eq">= ρ · g · h_c · A</span></div>
+        <div class="fr-row"><span class="sym">ȳ_CP</span><span class="eq">= ȳ_c + I_xc/(ȳ_c·A)</span></div>
+        <div class="fr-row"><span class="sym">h_CP</span><span class="eq">= ȳ_CP · sin(θ)</span></div>
+        <div class="fr-row"><span class="sym">ȳ_s</span><span class="eq">= h_s / sin(θ)</span></div>
+        <div class="fr-row"><span class="sym">P(h)</span><span class="eq">= ρ · g · h  [Pa]</span></div>
+      </div>
+      <p style="font-size:0.74rem;color:var(--text-muted);margin-top:8px;line-height:1.5;">
+        ȳ = distancia a lo largo del plano inclinado desde la proyección de la superficie libre.
+      </p>
+    </div>
+
+  </aside>
+
+  <!-- ══ CONTENT ═══════════════════════════════════════════════ -->
+  <main class="tool-content">
+
+    <!-- Canvas -->
+    <div class="card" style="padding:14px;">
+      <div style="font-size:0.78rem;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text-muted);margin-bottom:10px;">
+        Diagrama hidrostático — sistema de referencia: superficie libre del fluido
+      </div>
+      <div id="canvas-wrap">
+        <canvas id="main-canvas" width="900" height="560"></canvas>
+      </div>
+    </div>
+
+    <!-- Results card -->
+    <div class="card" id="results-card">
+
+      <!-- Summary trio -->
+      <div class="result-trio" style="margin-bottom:18px;">
+        <div class="rtrio-card" style="background:var(--fluid-light);border-color:var(--fluid-mid);">
+          <span class="rtrio-label" style="color:var(--fluid-dark);">F<sub>R</sub></span>
+          <span class="rtrio-val" style="color:var(--fluid-primary);" id="res-FR">—</span>
+          <span style="font-size:0.7rem;color:var(--text-muted);">kN</span>
+        </div>
+        <div class="rtrio-card" style="background:#eff6ff;border-color:#bfdbfe;">
+          <span class="rtrio-label" style="color:#1e3a6e;">h<sub>c</sub> centroide</span>
+          <span class="rtrio-val" style="color:#1d4ed8;" id="res-hc">—</span>
+          <span style="font-size:0.7rem;color:var(--text-muted);">m</span>
+        </div>
+        <div class="rtrio-card" style="background:#fef2f2;border-color:#fecaca;">
+          <span class="rtrio-label" style="color:#991b1b;">h<sub>CP</sub> centro presión</span>
+          <span class="rtrio-val" style="color:#ef4444;" id="res-hcp">—</span>
+          <span style="font-size:0.7rem;color:var(--text-muted);">m</span>
+        </div>
+      </div>
+
+      <!-- ── TABLA DE RESULTADOS + DESCARGA ─────────────────── -->
+      <div class="download-bar">
+        <h4>Tabla de resultados completa</h4>
+        <div class="dl-btns">
+          <button class="dl-btn" onclick="downloadCSV()" title="Descargar como CSV">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            CSV
+          </button>
+          <button class="dl-btn" onclick="downloadPNG()" title="Descargar diagrama como imagen PNG">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+            PNG
+          </button>
+        </div>
+      </div>
+
+      <div class="res-table-wrap">
+        <table class="res-table" id="res-table">
+          <thead>
+            <tr>
+              <th>Símbolo</th>
+              <th>Descripción</th>
+              <th>Valor</th>
+            </tr>
+          </thead>
+          <tbody id="res-table-body"></tbody>
+        </table>
+      </div>
+
+      <!-- ── PASO A PASO (detalle) ──────────────────────────── -->
+      <details style="margin-top:16px;">
+        <summary style="cursor:pointer;font-size:0.78rem;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text-muted);padding:6px 0;user-select:none;">
+          ▸ Ver desarrollo paso a paso
+        </summary>
+        <div style="margin-top:10px;">
+
+          <!-- Step 1: Geometry -->
+          <div class="step-block">
+            <div class="step-block-title">Paso 1 — Geometría y profundidades</div>
+            <div class="step-line"><span class="label">Profundidad borde superior h_s</span><span class="val" id="st-hs">—</span></div>
+            <div class="step-line"><span class="label">Profundidad borde inferior h_i</span><span class="val" id="st-hi">—</span></div>
+            <div class="step-line"><span class="label">Ángulo θ con la horizontal</span><span class="val" id="st-theta">—</span></div>
+            <div class="step-line"><span class="label">Dist. inclinada al borde sup. ȳ_s = h_s/sin(θ)</span><span class="val" id="st-ys">—</span></div>
+            <div class="step-line"><span class="label">Longitud de la superficie L</span><span class="val" id="st-L">—</span></div>
+          </div>
+
+          <!-- Step 2: Centroid -->
+          <div class="step-block">
+            <div class="step-block-title">Paso 2 — Centroide G</div>
+            <div class="step-line"><span class="label">Distancia local centroide ȳ_c_local</span><span class="val" id="st-yc-loc">—</span></div>
+            <div class="step-line"><span class="label">Dist. inclinada total ȳ_c = ȳ_s + ȳ_c_local</span><span class="val" id="st-yc">—</span></div>
+            <div class="step-line"><span class="label">Profundidad vertical centroide h_c = ȳ_c·sin(θ)</span><span class="val" id="st-hc">—</span></div>
+          </div>
+
+          <!-- Step 3: Area and inertia -->
+          <div class="step-block">
+            <div class="step-block-title">Paso 3 — Área e Inercia</div>
+            <div class="step-line"><span class="label">Área A</span><span class="val" id="st-A">—</span></div>
+            <div class="step-line"><span class="label">Momento de inercia I_xc (eje centroidal)</span><span class="val" id="st-Ixc">—</span></div>
+            <div class="step-line"><span class="label">Fórmula I_xc</span><span class="formula" id="st-Ixc-formula">—</span></div>
+          </div>
+
+          <!-- Step 4: Force -->
+          <div class="step-block" style="border-left-color:#ea580c;">
+            <div class="step-block-title" style="color:#9a3412;">Paso 4 — Fuerza Resultante F_R</div>
+            <div class="step-line"><span class="label">Presión en el centroide P_c = ρgh_c</span><span class="val" id="st-Pc">—</span></div>
+            <div class="step-line"><span class="label">Presión borde superior P_sup = ρgh_s</span><span class="val" id="st-Psup">—</span></div>
+            <div class="step-line"><span class="label">Presión borde inferior P_inf = ρgh_i</span><span class="val" id="st-Pinf">—</span></div>
+            <div class="step-line"><span class="label">Fuerza resultante F_R = ρ·g·h_c·A</span><span class="val" id="st-FR">—</span></div>
+            <div class="step-line"><span class="label">F_R actúa perpendicularmente a la superficie</span><span class="formula">⊥ al plano</span></div>
+          </div>
+
+          <!-- Step 5: CP -->
+          <div class="step-block" style="border-left-color:#ef4444;">
+            <div class="step-block-title" style="color:#991b1b;">Paso 5 — Centro de Presión CP</div>
+            <div class="step-line"><span class="label">Desplazamiento Δȳ = I_xc / (ȳ_c·A)</span><span class="val" id="st-dy">—</span></div>
+            <div class="step-line"><span class="label">Dist. inclinada ȳ_CP = ȳ_c + Δȳ</span><span class="val" id="st-ycp">—</span></div>
+            <div class="step-line"><span class="label">Profundidad vertical h_CP = ȳ_CP·sin(θ)</span><span class="val" id="st-hcp">—</span></div>
+            <div class="step-line"><span class="label">CP está por debajo del centroide Δh = Δȳ·sin(θ)</span><span class="val" id="st-dh">—</span></div>
+          </div>
+
+        </div>
+      </details>
+    </div>
+
+  </main>
+</div>
+</div>
+</main>
+
+<!-- ── FOOTER ──────────────────────────────────────────────── -->
+<footer class="footer-mini">
+  <a href="index.html">← Volver a PHYSICS</a> &nbsp;·&nbsp; © 2026 PHYSICS — Quito, Ecuador
+</footer>
+<a href="https://wa.me/593995324419" class="wa-float" target="_blank" rel="noopener" aria-label="WhatsApp">
+  <svg width="26" height="26" viewBox="0 0 24 24" fill="currentColor"><path d="M12.031 6.172c-3.181 0-5.767 2.586-5.768 5.766-.001 1.298.38 2.27 1.019 3.287l-.582 2.128 2.182-.573c.978.58 1.911.928 3.145.929 3.178 0 5.767-2.587 5.768-5.766 0-3.18-2.587-5.771-5.764-5.771z"/></svg>
+</a>
+
+<script>
+/* ═══════════════════════════════════════════════════════════════
+   PHYSICS — Hidrostática de Superficies Planas Sumergidas
+   Motor: puro JS + Canvas API. Sin dependencias externas.
+   Sistema de referencia: superficie libre del fluido (h=0 arriba)
+═══════════════════════════════════════════════════════════════ */
+
+var g_orient = { tri: 'up', semi: 'top' };
+var g_rho    = 1000;
+var g_fluidName = 'Agua (20°C)';
+
+/* ─── Navbar ──────────────────────────────────────────────── */
+document.getElementById('navToggle').addEventListener('click', function() {
+  var nl = document.getElementById('navLinks');
+  var open = nl.classList.toggle('open');
+  document.getElementById('navToggle').setAttribute('aria-expanded', open);
+});
+
+/* ─── Tipo de superficie ──────────────────────────────────── */
+function onSurfTypeChange() {
+  var type = document.getElementById('surf-type').value;
+  var groups = ['rect','circle','triangle','semicircle','trapezoid'];
+  groups.forEach(function(g) {
+    var el = document.getElementById('dims-' + g);
+    if (el) el.classList.toggle('visible', g === type);
+  });
+}
+
+/* ─── Orientación triángulo / semicírculo ─────────────────── */
+function setOrient(shape, val) {
+  g_orient[shape] = val;
+  if (shape === 'tri') {
+    document.getElementById('tri-up').classList.toggle('active', val === 'up');
+    document.getElementById('tri-dn').classList.toggle('active', val === 'down');
+  } else {
+    document.getElementById('semi-top').classList.toggle('active', val === 'top');
+    document.getElementById('semi-bot').classList.toggle('active', val === 'bottom');
+  }
+}
+
+/* ─── Ángulo slider ↔ input ───────────────────────────────── */
+function syncTheta(val, src) {
+  var v = Math.min(90, Math.max(10, parseFloat(val) || 60));
+  if (src === 'slider') {
+    document.getElementById('theta-num').value = v;
+  } else {
+    document.getElementById('theta-slider').value = v;
+  }
+  document.getElementById('theta-display').textContent = v + '°';
+}
+
+/* ─── Fluidos predefinidos ────────────────────────────────── */
+function setFluid(rho, name, btn) {
+  g_rho = rho;
+  g_fluidName = name;
+  document.getElementById('rho-input').value = rho;
+  document.querySelectorAll('.fbtn').forEach(function(b) { b.classList.remove('active'); });
+  if (btn) btn.classList.add('active');
+}
+
+/* ─── Error helpers ───────────────────────────────────────── */
+function showErr(msg) {
+  var el = document.getElementById('hyd-error');
+  el.textContent = '⚠ ' + msg;
+  el.classList.add('visible');
+}
+function clearErr() {
+  document.getElementById('hyd-error').classList.remove('visible');
+  document.getElementById('hyd-warn').classList.remove('visible');
+}
+function showWarn(msg) {
+  var el = document.getElementById('hyd-warn');
+  el.textContent = '⚠ ' + msg;
+  el.classList.add('visible');
+}
+
+/* ─── Formato numérico ────────────────────────────────────── */
+function f3(v) { return isFinite(v) ? v.toFixed(3) : '—'; }
+function f2(v) { return isFinite(v) ? v.toFixed(2) : '—'; }
+function fkN(v) { return isFinite(v) ? (v >= 1000 ? (v/1000).toFixed(2) + ' MN' : v.toFixed(2) + ' kN') : '—'; }
+
+/* ═══════════════════════════════════════════════════════════
+   MOTOR DE CÁLCULO HIDROSTÁTICO
+═══════════════════════════════════════════════════════════ */
+function calcHydro() {
+  clearErr();
+
+  var type  = document.getElementById('surf-type').value;
+  var theta_deg = parseFloat(document.getElementById('theta-num').value);
+  var h_s   = parseFloat(document.getElementById('h-s').value);
+  var rho   = parseFloat(document.getElementById('rho-input').value);
+  var g_grav= parseFloat(document.getElementById('g-input').value);
+
+  /* Validaciones básicas */
+  if (!isFinite(theta_deg) || theta_deg < 10 || theta_deg > 90) { showErr('θ debe estar entre 10° y 90°.'); return; }
+  if (!isFinite(h_s) || h_s < 0) { showErr('La profundidad h_s debe ser ≥ 0.'); return; }
+  if (!isFinite(rho) || rho <= 0) { showErr('La densidad ρ debe ser positiva.'); return; }
+
+  var theta = theta_deg * Math.PI / 180;
+  var sinT  = Math.sin(theta);
+  var cosT  = Math.cos(theta);
+
+  /* ── Propiedades geométricas según tipo ─────────────────── */
+  var A, yc_local, Ixc, L, shape_info;
+
+  if (type === 'rect') {
+    var b = parseFloat(document.getElementById('rect-b').value);
+    var h = parseFloat(document.getElementById('rect-h').value);
+    if (!isFinite(b)||b<=0||!isFinite(h)||h<=0) { showErr('Dimensiones del rectángulo inválidas.'); return; }
+    A        = b * h;
+    yc_local = h / 2;
+    Ixc      = b * Math.pow(h, 3) / 12;
+    L        = h;
+    shape_info = { type:'rect', b:b, h:h };
+
+  } else if (type === 'circle') {
+    var R = parseFloat(document.getElementById('circle-r').value);
+    if (!isFinite(R)||R<=0) { showErr('Radio inválido.'); return; }
+    A        = Math.PI * R * R;
+    yc_local = R;                     // centro = R desde el borde (borde sup = top del círculo)
+    Ixc      = Math.PI * Math.pow(R, 4) / 4;
+    L        = 2 * R;
+    shape_info = { type:'circle', R:R };
+
+  } else if (type === 'triangle') {
+    var b = parseFloat(document.getElementById('tri-b').value);
+    var h = parseFloat(document.getElementById('tri-h').value);
+    if (!isFinite(b)||b<=0||!isFinite(h)||h<=0) { showErr('Dimensiones del triángulo inválidas.'); return; }
+    A   = b * h / 2;
+    Ixc = b * Math.pow(h, 3) / 36;
+    L   = h;
+    // Vértice arriba → centroide a h/3 desde el vértice = 1/3 h desde arriba
+    // Vértice abajo  → centroide a h/3 desde la base = 2/3 h desde arriba
+    yc_local = (g_orient.tri === 'up') ? h / 3 : 2 * h / 3;
+    shape_info = { type:'triangle', b:b, h:h, orient: g_orient.tri };
+
+  } else if (type === 'semicircle') {
+    var R = parseFloat(document.getElementById('semi-r').value);
+    if (!isFinite(R)||R<=0) { showErr('Radio inválido.'); return; }
+    A   = Math.PI * R * R / 2;
+    Ixc = (Math.PI / 8 - 8 / (9 * Math.PI)) * Math.pow(R, 4);
+    L   = R;                          // longitud desde diámetro hasta extremo curvo
+    // Diámetro arriba → centroide a 4R/(3π) desde el diámetro (hacia la curva, hacia abajo)
+    // Diámetro abajo  → centroide a 4R/(3π) desde el diámetro (hacia la curva, hacia arriba)
+    //   pero "arriba" en nuestra coord = borde superior; ajustar
+    if (g_orient.semi === 'top') {
+      // Diámetro en borde superior, curva hacia abajo
+      yc_local = 4 * R / (3 * Math.PI);
+      L = R;
+    } else {
+      // Diámetro en borde inferior, curva hacia arriba
+      // Borde superior = extremo curvo; centroide desde borde sup = R - 4R/(3π)
+      yc_local = R - 4 * R / (3 * Math.PI);
+      L = R;
+    }
+    shape_info = { type:'semicircle', R:R, orient: g_orient.semi };
+
+  } else if (type === 'trapezoid') {
+    var B = parseFloat(document.getElementById('trap-B').value);
+    var b = parseFloat(document.getElementById('trap-b').value);
+    var h = parseFloat(document.getElementById('trap-h').value);
+    if (!isFinite(B)||B<=0||!isFinite(b)||b<=0||!isFinite(h)||h<=0) { showErr('Dimensiones del trapecio inválidas.'); return; }
+    if (b >= B) { showErr('La base menor b debe ser menor que la base mayor B.'); return; }
+    A        = (B + b) * h / 2;
+    // Centroide desde la base mayor (abajo): h(2B+b)/(3(B+b))
+    // Desde el borde superior (base menor está arriba): h - h(2B+b)/(3(B+b))
+    var yc_from_bottom = h * (2*B + b) / (3 * (B + b));
+    yc_local = h - yc_from_bottom;   // desde el borde superior
+    Ixc      = Math.pow(h, 3) * (B*B + 4*B*b + b*b) / (36 * (B + b));
+    L        = h;
+    shape_info = { type:'trapezoid', B:B, b:b, h:h };
+  }
+
+  /* ── Cálculo hidrostático ────────────────────────────────── */
+  var ys_s = h_s / sinT;              // dist. inclinada al borde superior
+  var yc   = ys_s + yc_local;         // dist. inclinada al centroide
+  var hc   = yc * sinT;               // profundidad vertical del centroide
+  var hi   = h_s + L * sinT;          // profundidad borde inferior
+
+  var FR   = rho * g_grav * hc * A;   // N
+  var FR_kN = FR / 1000;              // kN
+
+  var Pc   = rho * g_grav * hc;       // Pa
+  var Psup = rho * g_grav * h_s;      // Pa
+  var Pinf = rho * g_grav * hi;       // Pa
+
+  // Centro de presión
+  var delta_y = Ixc / (yc * A);
+  var yCP     = yc + delta_y;
+  var hCP     = yCP * sinT;
+  var delta_h = delta_y * sinT;
+
+  /* Advertencias */
+  if (h_s === 0) showWarn('Borde superior en la superficie libre (h_s = 0). El diagrama de presiones es triangular.');
+  if (theta_deg === 90) showWarn('Superficie vertical (θ = 90°): ȳ = h directamente.');
+
+  /* ── Mostrar resultados ─────────────────────────────────── */
+  document.getElementById('results-card').style.display = 'block';
+
+  // Summary
+  document.getElementById('res-FR').textContent  = FR_kN.toFixed(2);
+  document.getElementById('res-hc').textContent  = hc.toFixed(3);
+  document.getElementById('res-hcp').textContent = hCP.toFixed(3);
+
+  // Step 1
+  set('st-hs',    f3(h_s)    + ' m');
+  set('st-hi',    f3(hi)     + ' m');
+  set('st-theta', theta_deg  + '°');
+  set('st-ys',    f3(ys_s)   + ' m');
+  set('st-L',     f3(L)      + ' m');
+
+  // Step 2
+  set('st-yc-loc', f3(yc_local) + ' m');
+  set('st-yc',     f3(yc)       + ' m');
+  set('st-hc',     f3(hc)       + ' m');
+
+  // Step 3
+  set('st-A',   f3(A)   + ' m²');
+  set('st-Ixc', f3(Ixc) + ' m⁴');
+  set('st-Ixc-formula', getIxcFormula(type));
+
+  // Step 4
+  set('st-Pc',   (Pc/1000).toFixed(3)   + ' kPa');
+  set('st-Psup', (Psup/1000).toFixed(3) + ' kPa');
+  set('st-Pinf', (Pinf/1000).toFixed(3) + ' kPa');
+  set('st-FR',   FR_kN.toFixed(3)       + ' kN');
+
+  // Step 5
+  set('st-dy',  f3(delta_y) + ' m  (en el plano)');
+  set('st-ycp', f3(yCP)     + ' m');
+  set('st-hcp', f3(hCP)     + ' m');
+  set('st-dh',  f3(delta_h) + ' m  (vertical)');
+
+  /* ── Llenar tabla de resultados ─────────────────────────── */
+  var surfNames = {
+    rect:'Rectángulo', circle:'Círculo', triangle:'Triángulo',
+    semicircle:'Semicírculo', trapezoid:'Trapecio'
+  };
+  fillTable([
+    { group: '① Parámetros de entrada' },
+    { sym:'Tipo',    desc:'Geometría de la superficie',                 val: surfNames[type] || type },
+    { sym:'θ',       desc:'Ángulo con la horizontal',                   val: theta_deg + '°' },
+    { sym:'ρ',       desc:'Densidad del fluido',                        val: rho + ' kg/m³' },
+    { sym:'g',       desc:'Aceleración gravitacional',                  val: g_grav + ' m/s²' },
+    { sym:'h_s',     desc:'Profundidad del borde superior',             val: f3(h_s) + ' m' },
+
+    { group: '② Geometría de la superficie' },
+    { sym:'L',       desc:'Longitud de la superficie (a lo largo del plano)', val: f3(L) + ' m' },
+    { sym:'h_i',     desc:'Profundidad del borde inferior',             val: f3(hi) + ' m' },
+    { sym:'A',       desc:'Área de la superficie',                      val: f3(A) + ' m²' },
+    { sym:'I_xc',    desc:'Momento de inercia centroidal  [ ' + getIxcFormula(type) + ' ]', val: f3(Ixc) + ' m⁴' },
+
+    { group: '③ Centroide G' },
+    { sym:'ȳ_s',     desc:'Dist. inclinada al borde superior  (h_s / sin θ)',  val: f3(ys_s)     + ' m' },
+    { sym:'ȳ_c_loc', desc:'Dist. inclinada local al centroide',               val: f3(yc_local)  + ' m' },
+    { sym:'ȳ_c',     desc:'Dist. inclinada total al centroide  (ȳ_s + ȳ_c_loc)', val: f3(yc)    + ' m' },
+    { sym:'h_c',     desc:'Profundidad vertical del centroide  (ȳ_c · sin θ)', val: f3(hc)       + ' m' },
+
+    { group: '④ Fuerza resultante  F_R  ⊥ superficie' },
+    { sym:'P_sup',   desc:'Presión hidrostática en el borde superior',  val: (Psup/1000).toFixed(4) + ' kPa' },
+    { sym:'P_c',     desc:'Presión hidrostática en el centroide',       val: (Pc/1000).toFixed(4)   + ' kPa' },
+    { sym:'P_inf',   desc:'Presión hidrostática en el borde inferior',  val: (Pinf/1000).toFixed(4) + ' kPa' },
+    { sym:'F_R',     desc:'Fuerza resultante  (ρ · g · h_c · A)',       val: FR_kN.toFixed(4)       + ' kN',   highlight: true },
+
+    { group: '⑤ Centro de presión CP' },
+    { sym:'Δȳ',      desc:'Desplazamiento CP vs. centroide en plano  (I_xc / ȳ_c·A)', val: f3(delta_y) + ' m' },
+    { sym:'ȳ_CP',    desc:'Dist. inclinada al centro de presión',       val: f3(yCP) + ' m' },
+    { sym:'h_CP',    desc:'Profundidad vertical del centro de presión', val: f3(hCP) + ' m',  highlightCP: true },
+    { sym:'Δh',      desc:'CP más profundo que el centroide (vertical) (Δȳ · sin θ)', val: f3(delta_h) + ' m' },
+  ]);
+
+  /* ── Render Canvas ──────────────────────────────────────── */
+  var calc = {
+    h_s: h_s, hi: hi, hc: hc, hCP: hCP,
+    yc: yc, yCP: yCP, ys_s: ys_s, delta_y: delta_y,
+    yc_local: yc_local,
+    theta: theta, theta_deg: theta_deg,
+    sinT: sinT, cosT: cosT,
+    L: L, A: A, Ixc: Ixc,
+    FR: FR, FR_kN: FR_kN,
+    Pc: Pc, Psup: Psup, Pinf: Pinf,
+    rho: rho, g: g_grav
+  };
+  renderCanvas(calc, shape_info);
+}
+
+function set(id, val) { document.getElementById(id).textContent = val; }
+
+function getIxcFormula(type) {
+  var f = { rect:'b·h³/12', circle:'π·R⁴/4', triangle:'b·h³/36',
+            semicircle:'(π/8 − 8/(9π))·R⁴', trapezoid:'h³(B²+4Bb+b²)/(36(B+b))' };
+  return f[type] || '—';
+}
+
+/* ═══════════════════════════════════════════════════════════
+   RENDERIZADOR CANVAS
+   Canvas: 900×560 px  (se escala con CSS)
+   Zona A (izq): 0..540  → vista inclinada
+   Zona B (der): 560..900 → diagrama de presiones
+═══════════════════════════════════════════════════════════ */
+function renderCanvas(c, shape) {
+  var canvas = document.getElementById('main-canvas');
+  var ctx    = canvas.getContext('2d');
+  var W = 900, H = 560;
+  ctx.clearRect(0, 0, W, H);
+
+  var ZA_W = 550;   // zona izquierda
+  var ZB_X = 580;   // inicio zona derecha
+  var ZB_W = 300;   // ancho zona derecha
+  var MT = 50;      // margen top
+  var MB = 40;      // margen bottom
+
+  /* ── Escala: pixels por metro en el eje vertical ────────── */
+  var totalDepth = c.hi + 0.6 * c.hi + 0.2;
+  var pxPerM = Math.min((H - MT - MB) / Math.max(totalDepth, 0.5), 120);
+
+  /* ─────────────────────────────────────────────────────────
+     ZONA A: Vista de sección transversal inclinada
+  ───────────────────────────────────────────────────────── */
+  var cx_surface = ZA_W / 2;   // centro horizontal de la zona A
+
+  /* 1. Fluido de fondo */
+  ctx.fillStyle = 'rgba(186,230,253,0.45)';
+  ctx.fillRect(0, MT, ZA_W, H - MT - MB);
+
+  /* 2. Superficie libre del fluido (y=0 → y_px = MT) */
+  drawWaterSurface(ctx, 0, ZA_W, MT);
+
+  /* 3. Calcular posiciones en canvas de los puntos clave */
+  // Dirección de la superficie inclinada en el canvas
+  // θ con la horizontal: componente horizontal = cosT, vertical = sinT
+  // El borde superior de la superficie está a h_s de profundidad
+  var x_top = cx_surface;
+  var y_top = MT + c.h_s * pxPerM;
+
+  // La superficie se extiende a lo largo de su plano:
+  // Δx = L·cosT, Δy = L·sinT
+  var dx = c.L * c.cosT * pxPerM;
+  var dy = c.L * c.sinT * pxPerM;
+  var x_bot = x_top + dx;
+  var y_bot = y_top + dy;
+
+  // Centroide en canvas
+  var frac_G  = c.yc_local / c.L;
+  var xG      = x_top + dx * frac_G;
+  var yG      = y_top + dy * frac_G;
+
+  // CP en canvas
+  var frac_CP = (c.yCP - c.ys_s) / c.L;
+  frac_CP     = Math.min(1, Math.max(0, frac_CP));
+  var xCP     = x_top + dx * frac_CP;
+  var yCP_px  = y_top + dy * frac_CP;
+
+  /* 4. Dibujar la forma sumergida */
+  drawSurface(ctx, shape, x_top, y_top, x_bot, y_bot, c, pxPerM);
+
+  /* 5. Cotas de profundidad (lado derecho de zona A) */
+  var x_dim = ZA_W - 30;
+  drawDepthDim(ctx, x_dim, MT, MT + c.h_s * pxPerM,
+               'h_s = ' + c.h_s.toFixed(2) + ' m', '#6b7280');
+  drawDepthDim(ctx, x_dim, MT, MT + c.hc * pxPerM,
+               'h_c = ' + c.hc.toFixed(3) + ' m', '#2563eb');
+  drawDepthDim(ctx, x_dim + 12, MT, MT + c.hCP * pxPerM,
+               'h_CP = ' + c.hCP.toFixed(3) + ' m', '#ef4444');
+
+  /* 6. Líneas de referencia horizontal (discontinuas) */
+  // Línea centroide
+  ctx.save();
+  ctx.setLineDash([4, 4]);
+  ctx.strokeStyle = '#93c5fd';
+  ctx.lineWidth   = 1;
+  ctx.beginPath(); ctx.moveTo(0, yG); ctx.lineTo(x_dim - 2, yG); ctx.stroke();
+  // Línea CP
+  ctx.strokeStyle = '#fca5a5';
+  ctx.beginPath(); ctx.moveTo(0, yCP_px); ctx.lineTo(x_dim - 2, yCP_px); ctx.stroke();
+  ctx.restore();
+
+  /* 7. Vector F_R perpendicular a la superficie en CP */
+  var FR_scale  = Math.min(80, Math.max(20, c.FR_kN * 0.06));
+  // Dirección perpendicular a la superficie: normal apunta "hacia la derecha del fluido"
+  // Normal al plano inclinado (en el canvas): (-sinT, cosT) rotado
+  // La superficie va en dirección (cosT, sinT), la normal interior es (-sinT, cosT)
+  var nx = -c.sinT;
+  var ny =  c.cosT;
+  // En el canvas y va hacia abajo, así que la fuerza apunta:
+  // perpendicular "hacia dentro" del fluido = hacia la superficie desde el lado del fluido
+  // Fluido está a la izquierda/arriba → fuerza apunta hacia la derecha/abajo
+  var fx_dir =  c.sinT;
+  var fy_dir = -c.cosT;
+  drawArrow(ctx,
+    xCP, yCP_px,
+    xCP + fx_dir * FR_scale, yCP_px + fy_dir * FR_scale,
+    '#f97316', 2.5, 'F_R = ' + c.FR_kN.toFixed(1) + ' kN');
+
+  /* 8. Puntos G y CP */
+  drawPoint(ctx, xG, yG, 7, '#2563eb', '#fff', 'G');
+  drawPoint(ctx, xCP, yCP_px, 7, '#ef4444', '#fff', 'CP');
+
+  /* 9. Label fluido */
+  ctx.fillStyle = 'rgba(14,116,144,0.7)';
+  ctx.font = '600 11px Inter';
+  ctx.fillText(document.getElementById('rho-input').value + ' kg/m³ · θ=' + c.theta_deg + '°', 8, MT + 16);
+
+  /* ─────────────────────────────────────────────────────────
+     ZONA B: Diagrama de presiones
+  ───────────────────────────────────────────────────────── */
+  drawPressureDiagram(ctx, c, shape, ZB_X, ZB_W, MT, H - MB, pxPerM, frac_G, frac_CP);
+
+  /* Separador */
+  ctx.strokeStyle = '#e2e8f0';
+  ctx.lineWidth   = 1;
+  ctx.setLineDash([]);
+  ctx.beginPath();
+  ctx.moveTo(ZA_W + 14, MT);
+  ctx.lineTo(ZA_W + 14, H - MB);
+  ctx.stroke();
+
+  /* Título zona A */
+  ctx.fillStyle = '#64748b';
+  ctx.font = '700 11px Inter';
+  ctx.fillText('SECCIÓN TRANSVERSAL', 8, MT - 10);
+
+  /* Título zona B */
+  ctx.fillText('DIAGRAMA DE PRESIONES', ZB_X, MT - 10);
+}
+
+/* ─── Dibujar forma sumergida inclinada ─────────────────── */
+function drawSurface(ctx, shape, x_top, y_top, x_bot, y_bot, c, pxPerM) {
+  var type = shape.type;
+  var dx = x_bot - x_top;
+  var dy = y_bot - y_top;
+  var halfW_px; // mitad del ancho de la superficie en pixels
+
+  ctx.save();
+
+  if (type === 'rect') {
+    halfW_px = (shape.b / 2) * pxPerM * 0.4; // escala visual perpendicular
+    // El rectángulo se dibuja como un paralelogramo proyectado
+    // Dibujamos 4 esquinas: la superficie tiene ancho b perpendicular al eje inclinado
+    // En la vista 2D lo representamos como la línea central + grosor perpendicular
+    var px = -c.sinT * halfW_px;  // perpendicular al eje de la superficie (en canvas)
+    var py =  c.cosT * halfW_px;
+    // Recorte por detrás del fluido
+    ctx.fillStyle = 'rgba(30,58,110,0.85)';
+    ctx.strokeStyle = '#0f172a';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(x_top + px, y_top + py);
+    ctx.lineTo(x_bot + px, y_bot + py);
+    ctx.lineTo(x_bot - px, y_bot - py);
+    ctx.lineTo(x_top - px, y_top - py);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+
+  } else if (type === 'circle') {
+    var R_px = shape.R * pxPerM * 0.4;
+    var cx   = (x_top + x_bot) / 2;
+    var cy   = (y_top + y_bot) / 2;
+    ctx.fillStyle   = 'rgba(30,58,110,0.85)';
+    ctx.strokeStyle = '#0f172a';
+    ctx.lineWidth   = 2;
+    ctx.beginPath();
+    ctx.ellipse(cx, cy, R_px * 0.5, R_px, Math.atan2(dy, dx), 0, Math.PI * 2);
+    ctx.fill(); ctx.stroke();
+
+  } else if (type === 'triangle') {
+    var bHalf_px = (shape.b / 2) * pxPerM * 0.4;
+    var px = -c.sinT * bHalf_px;
+    var py =  c.cosT * bHalf_px;
+    ctx.fillStyle   = 'rgba(30,58,110,0.85)';
+    ctx.strokeStyle = '#0f172a';
+    ctx.lineWidth   = 2;
+    ctx.beginPath();
+    if (shape.orient === 'up') {
+      // Vértice arriba (top), base abajo (bot)
+      ctx.moveTo(x_top, y_top);               // vértice
+      ctx.lineTo(x_bot + px, y_bot + py);     // base izq
+      ctx.lineTo(x_bot - px, y_bot - py);     // base der
+    } else {
+      // Base arriba (top), vértice abajo (bot)
+      ctx.moveTo(x_top + px, y_top + py);
+      ctx.lineTo(x_top - px, y_top - py);
+      ctx.lineTo(x_bot, y_bot);
+    }
+    ctx.closePath();
+    ctx.fill(); ctx.stroke();
+
+  } else if (type === 'semicircle') {
+    var R_px  = shape.R * pxPerM * 0.4;
+    var angle = Math.atan2(dy, dx);
+    var cx_sc, cy_sc;
+    ctx.fillStyle   = 'rgba(30,58,110,0.85)';
+    ctx.strokeStyle = '#0f172a';
+    ctx.lineWidth   = 2;
+    ctx.beginPath();
+    if (shape.orient === 'top') {
+      // Diámetro arriba → semicírculo cuelga hacia abajo
+      cx_sc = x_top; cy_sc = y_top;
+      ctx.arc(cx_sc, cy_sc, R_px * 0.5, angle, angle + Math.PI);
+    } else {
+      // Diámetro abajo → semicírculo sube hacia arriba
+      cx_sc = x_bot; cy_sc = y_bot;
+      ctx.arc(cx_sc, cy_sc, R_px * 0.5, angle + Math.PI, angle + 2 * Math.PI);
+    }
+    ctx.closePath();
+    ctx.fill(); ctx.stroke();
+
+  } else if (type === 'trapezoid') {
+    var B_half_px = (shape.B / 2) * pxPerM * 0.4;
+    var b_half_px = (shape.b / 2) * pxPerM * 0.4;
+    var px_top = -c.sinT * b_half_px; var py_top =  c.cosT * b_half_px;
+    var px_bot = -c.sinT * B_half_px; var py_bot =  c.cosT * B_half_px;
+    ctx.fillStyle   = 'rgba(30,58,110,0.85)';
+    ctx.strokeStyle = '#0f172a';
+    ctx.lineWidth   = 2;
+    ctx.beginPath();
+    ctx.moveTo(x_top + px_top, y_top + py_top);
+    ctx.lineTo(x_top - px_top, y_top - py_top);
+    ctx.lineTo(x_bot - px_bot, y_bot - py_bot);
+    ctx.lineTo(x_bot + px_bot, y_bot + py_bot);
+    ctx.closePath();
+    ctx.fill(); ctx.stroke();
+  }
+
+  ctx.restore();
+}
+
+/* ─── Diagrama de presiones (zona derecha) ──────────────── */
+function drawPressureDiagram(ctx, c, shape, ZB_X, ZB_W, y_top_px, y_bot_px, pxPerM, frac_G, frac_CP) {
+  var availH   = y_bot_px - y_top_px;
+  var surf_y0  = y_top_px + c.h_s * pxPerM;   // borde superior de la superficie
+  var surf_y1  = y_top_px + c.hi  * pxPerM;   // borde inferior
+  var surf_H   = Math.max(surf_y1 - surf_y0, 4);
+
+  // Escala de presiones
+  var P_max    = c.Pinf;
+  var P_sup    = c.Psup;
+  var maxBarW  = ZB_W - 80;
+
+  // Eje de la superficie (línea izquierda del diagrama)
+  var axis_x   = ZB_X + 60;
+
+  // Polígono del diagrama de presiones
+  var w_sup    = P_max > 0 ? (P_sup / P_max) * maxBarW : 0;
+  var w_inf    = maxBarW;
+
+  // Gradiente de color
+  var grad = ctx.createLinearGradient(axis_x, surf_y0, axis_x, surf_y1);
+  grad.addColorStop(0,   'rgba(147,197,253,0.55)');
+  grad.addColorStop(1,   'rgba(30,64,175,0.65)');
+
+  ctx.fillStyle   = grad;
+  ctx.strokeStyle = '#1d4ed8';
+  ctx.lineWidth   = 1.5;
+  ctx.setLineDash([]);
+  ctx.beginPath();
+  ctx.moveTo(axis_x, surf_y0);
+  ctx.lineTo(axis_x + w_sup, surf_y0);
+  ctx.lineTo(axis_x + w_inf, surf_y1);
+  ctx.lineTo(axis_x, surf_y1);
+  ctx.closePath();
+  ctx.fill();
+  ctx.stroke();
+
+  // Eje de la superficie (línea vertical gruesa)
+  ctx.strokeStyle = '#1e3a6e';
+  ctx.lineWidth   = 3;
+  ctx.beginPath();
+  ctx.moveTo(axis_x, surf_y0 - 4);
+  ctx.lineTo(axis_x, surf_y1 + 4);
+  ctx.stroke();
+
+  // Escala de presiones (etiquetas)
+  ctx.fillStyle = '#374151';
+  ctx.font      = '600 10px Fira Code, monospace';
+  ctx.textAlign = 'right';
+  ctx.fillText((P_sup/1000).toFixed(1) + ' kPa', axis_x - 4, surf_y0 + 4);
+  ctx.fillText((c.Pinf/1000).toFixed(1) + ' kPa', axis_x - 4, surf_y1);
+
+  // Flecha F_R horizontal en la posición CP
+  var yCP_d = surf_y0 + frac_CP * surf_H;
+  var arrowLen = Math.min(w_inf * 0.7, 80);
+  drawArrow(ctx, axis_x, yCP_d, axis_x + arrowLen, yCP_d, '#f97316', 2, '');
+
+  // Puntos G y CP sobre el eje
+  var yG_d  = surf_y0 + frac_G  * surf_H;
+  drawPoint(ctx, axis_x, yG_d,  5, '#2563eb', '#fff', 'G');
+  drawPoint(ctx, axis_x, yCP_d, 5, '#ef4444', '#fff', 'CP');
+
+  // Etiqueta "PRESIÓN →"
+  ctx.fillStyle = '#6b7280';
+  ctx.font      = '700 10px Inter';
+  ctx.textAlign = 'left';
+  ctx.fillText('Presión →', axis_x + 4, surf_y0 - 8);
+
+  // Etiqueta superficie libre si h_s > 0
+  if (c.h_s > 0) {
+    ctx.fillStyle = '#0891b2';
+    ctx.font      = '600 10px Inter';
+    ctx.textAlign = 'left';
+    // Línea de la superficie libre
+    ctx.save();
+    ctx.strokeStyle = '#0891b2'; ctx.lineWidth = 1.5; ctx.setLineDash([3,3]);
+    ctx.beginPath();
+    ctx.moveTo(ZB_X + 10, y_top_px + pxPerM * 0);
+    ctx.lineTo(ZB_X + ZB_W - 4, y_top_px + pxPerM * 0);
+    ctx.stroke();
+    ctx.restore();
+    ctx.fillText('Sup. libre (h=0)', ZB_X + 12, y_top_px - 3);
+  }
+
+  ctx.textAlign = 'left'; // reset
+}
+
+/* ─── Superficie libre con ondas ──────────────────────────── */
+function drawWaterSurface(ctx, x0, x1, y) {
+  ctx.save();
+  ctx.strokeStyle = '#0891b2';
+  ctx.lineWidth   = 2.5;
+  ctx.beginPath();
+  var amp = 3, period = 30;
+  ctx.moveTo(x0, y);
+  for (var x = x0; x <= x1; x += 2) {
+    ctx.lineTo(x, y + amp * Math.sin((x / period) * 2 * Math.PI));
+  }
+  ctx.stroke();
+  // Pequeñas flechas ↓ indicando presión hidrostática creciente
+  ctx.strokeStyle = 'rgba(14,116,144,0.4)';
+  ctx.lineWidth   = 1;
+  for (var xi = x0 + 30; xi < x1 - 10; xi += 50) {
+    ctx.beginPath();
+    ctx.moveTo(xi, y + 6);
+    ctx.lineTo(xi, y + 14);
+    ctx.moveTo(xi, y + 14); ctx.lineTo(xi - 3, y + 10);
+    ctx.moveTo(xi, y + 14); ctx.lineTo(xi + 3, y + 10);
+    ctx.stroke();
+  }
+  ctx.restore();
+}
+
+/* ─── Cota de profundidad ─────────────────────────────────── */
+function drawDepthDim(ctx, x, y0, y1, label, color) {
+  if (Math.abs(y1 - y0) < 6) return;
+  ctx.save();
+  ctx.strokeStyle = color; ctx.lineWidth = 1; ctx.fillStyle = color;
+  ctx.setLineDash([3, 3]);
+  // Línea vertical
+  ctx.beginPath(); ctx.moveTo(x, y0 + 2); ctx.lineTo(x, y1 - 2); ctx.stroke();
+  ctx.setLineDash([]);
+  // Flechas
+  ctx.beginPath();
+  ctx.moveTo(x, y0); ctx.lineTo(x - 3, y0 + 6); ctx.lineTo(x + 3, y0 + 6); ctx.closePath(); ctx.fill();
+  ctx.beginPath();
+  ctx.moveTo(x, y1); ctx.lineTo(x - 3, y1 - 6); ctx.lineTo(x + 3, y1 - 6); ctx.closePath(); ctx.fill();
+  // Label
+  ctx.font      = '600 9px Inter';
+  ctx.textAlign = 'right';
+  ctx.fillText(label, x - 5, (y0 + y1) / 2 + 3);
+  ctx.restore();
+}
+
+/* ─── Flecha con punta ────────────────────────────────────── */
+function drawArrow(ctx, x1, y1, x2, y2, color, lw, label) {
+  var dx = x2 - x1, dy = y2 - y1;
+  var angle = Math.atan2(dy, dx);
+  var len   = Math.sqrt(dx*dx + dy*dy);
+  ctx.save();
+  ctx.strokeStyle = color; ctx.fillStyle = color; ctx.lineWidth = lw;
+  ctx.setLineDash([]);
+  ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke();
+  // Punta de flecha
+  var hs = 8;
+  ctx.beginPath();
+  ctx.moveTo(x2, y2);
+  ctx.lineTo(x2 - hs * Math.cos(angle - 0.4), y2 - hs * Math.sin(angle - 0.4));
+  ctx.lineTo(x2 - hs * Math.cos(angle + 0.4), y2 - hs * Math.sin(angle + 0.4));
+  ctx.closePath(); ctx.fill();
+  if (label) {
+    ctx.font = '700 10px Inter';
+    ctx.textAlign = 'left';
+    ctx.fillText(label, x2 + 6, y2 + 4);
+  }
+  ctx.restore();
+}
+
+/* ─── Punto con etiqueta ──────────────────────────────────── */
+function drawPoint(ctx, x, y, r, fill, stroke, label) {
+  ctx.save();
+  ctx.beginPath();
+  ctx.arc(x, y, r, 0, Math.PI * 2);
+  ctx.fillStyle = fill; ctx.fill();
+  ctx.strokeStyle = stroke; ctx.lineWidth = 1.5; ctx.stroke();
+  ctx.fillStyle = fill; ctx.font = '700 10px Inter';
+  ctx.fillText(label, x + r + 3, y + 3);
+  ctx.restore();
+}
+
+/* ═══════════════════════════════════════════════════════════
+   TABLA DE RESULTADOS
+═══════════════════════════════════════════════════════════ */
+
+// Estado global para la descarga
+var g_tableData = [];
+
+function fillTable(data) {
+  g_tableData = data;
+  var tbody = document.getElementById('res-table-body');
+  tbody.innerHTML = '';
+
+  data.forEach(function(row) {
+    if (row.group) {
+      var tr = document.createElement('tr');
+      tr.className = 'group-row';
+      tr.innerHTML = '<td colspan="3">' + row.group + '</td>';
+      tbody.appendChild(tr);
+      return;
+    }
+    var tr = document.createElement('tr');
+    if (row.highlight)    tr.className = 'highlight-row';
+    if (row.highlightCP)  tr.className = 'highlight-cp';
+    tr.innerHTML =
+      '<td>' + row.sym + '</td>' +
+      '<td>' + row.desc + '</td>' +
+      '<td>' + row.val + '</td>';
+    tbody.appendChild(tr);
+  });
+}
+
+/* ─── Descarga CSV ────────────────────────────────────────── */
+function downloadCSV() {
+  if (!g_tableData.length) return;
+
+  var lines = ['Símbolo,Descripción,Valor'];
+  g_tableData.forEach(function(row) {
+    if (row.group) {
+      lines.push('"--- ' + row.group + ' ---","",""');
+    } else {
+      // Escapar comillas en el valor
+      var sym  = (row.sym  || '').replace(/"/g, '""');
+      var desc = (row.desc || '').replace(/"/g, '""');
+      var val  = (row.val  || '').replace(/"/g, '""');
+      lines.push('"' + sym + '","' + desc + '","' + val + '"');
+    }
+  });
+
+  // Cabecera con metadatos del cálculo
+  var header = [
+    '"PHYSICS — Superficies Planas Sumergidas"',
+    '"Generado: ' + new Date().toLocaleString('es-EC') + '"',
+    '"Fluido: ' + document.getElementById('rho-input').value + ' kg/m³  |  g = ' + document.getElementById('g-input').value + ' m/s²"',
+    '""',
+  ];
+
+  var csv = '\uFEFF' + header.join('\n') + '\n' + lines.join('\n');
+  var blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  var url  = URL.createObjectURL(blob);
+  var a    = document.createElement('a');
+  a.href     = url;
+  a.download = 'hidro_superficie_' + new Date().toISOString().slice(0,10) + '.csv';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+/* ─── Descarga PNG ────────────────────────────────────────── */
+function downloadPNG() {
+  var canvas = document.getElementById('main-canvas');
+
+  // Crear canvas con margen y texto de metadatos
+  var offCanvas = document.createElement('canvas');
+  offCanvas.width  = canvas.width;
+  offCanvas.height = canvas.height + 44;
+  var octx = offCanvas.getContext('2d');
+
+  // Fondo blanco
+  octx.fillStyle = '#ffffff';
+  octx.fillRect(0, 0, offCanvas.width, offCanvas.height);
+
+  // Copiar el diagrama
+  octx.drawImage(canvas, 0, 44);
+
+  // Franja superior con datos del cálculo
+  octx.fillStyle = '#164e63';
+  octx.fillRect(0, 0, offCanvas.width, 44);
+  octx.fillStyle = '#ffffff';
+  octx.font = '700 13px Inter, sans-serif';
+  octx.fillText('PHYSICS — Hidrostática de Superficies Planas Sumergidas', 14, 17);
+  octx.font = '500 11px Inter, sans-serif';
+  octx.fillStyle = 'rgba(255,255,255,0.75)';
+
+  // Obtener resumen de resultados para el pie
+  var FR_txt  = document.getElementById('res-FR').textContent;
+  var hc_txt  = document.getElementById('res-hc').textContent;
+  var hcp_txt = document.getElementById('res-hcp').textContent;
+  var rho_val = document.getElementById('rho-input').value;
+  var g_val   = document.getElementById('g-input').value;
+  octx.fillText(
+    'F\u1D3F = ' + FR_txt + ' kN  |  h\u209C = ' + hc_txt + ' m  |  h\u1D04\u1D18 = ' + hcp_txt +
+    ' m  |  \u03C1 = ' + rho_val + ' kg/m\u00B3  |  g = ' + g_val + ' m/s\u00B2',
+    14, 35
+  );
+  // Timestamp derecha
+  octx.textAlign = 'right';
+  octx.fillText(new Date().toLocaleString('es-EC'), offCanvas.width - 14, 35);
+  octx.textAlign = 'left';
+
+  var url = offCanvas.toDataURL('image/png');
+  var a   = document.createElement('a');
+  a.href     = url;
+  a.download = 'hidro_diagrama_' + new Date().toISOString().slice(0,10) + '.png';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+}
+
+/* ── Inicializar con render por defecto ─────────────────── */
+window.addEventListener('load', function() { calcHydro(); });
+</script>
+</body>
+</html>

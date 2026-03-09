@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Estadística y Probabilidad | PHYSICS</title>
+  <meta name="description" content="Calculadora interactiva de distribuciones Normal, t-Student y Chi-Cuadrado para ingeniería. Visualización de áreas y probabilidades.">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚙️</text></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=Fira+Code:wght@400&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jstat/1.9.6/jstat.min.js"></script>
+</head>
+<body>
+
+  <!-- NAVBAR -->
+  <nav class="nav-physics" role="navigation" aria-label="Navegación principal">
+    <div class="container nav-inner">
+      <a href="index.html" class="nav-logo">PHYSICS<span>.</span></a>
+      <button class="nav-toggle" id="navToggle" aria-expanded="false" aria-controls="navLinks" aria-label="Abrir menú">
+        <span></span><span></span><span></span>
+      </button>
+      <ul class="nav-links" id="navLinks" role="list">
+        <li><a href="index.html">Inicio</a></li>
+        <li><a href="index.html#cursos">Asignaturas</a></li>
+        <li><a href="calculadora.html">Calculadora</a></li>
+        <li><a href="index.html#contacto">Contacto</a></li>
+      </ul>
+      <a href="https://wa.me/593995324419" target="_blank" class="btn btn-primary btn-sm nav-cta" rel="noopener">Reservar clase</a>
+    </div>
+  </nav>
+
+  <!-- TOOL HERO -->
+  <header class="tool-hero">
+    <div class="container">
+      <div class="breadcrumb" aria-label="Ruta de navegación">
+        <a href="index.html">PHYSICS</a>
+        <span aria-hidden="true">›</span>
+        <span>Probabilidad y Estadística</span>
+      </div>
+      <h1>Distribuciones de <span>Probabilidad</span></h1>
+      <p>Calcula probabilidades y visualiza el área bajo la curva para distribuciones Normal, t-Student y Chi-Cuadrado.</p>
+    </div>
+  </header>
+
+  <!-- CONTENIDO PRINCIPAL -->
+  <main>
+    <div class="container" style="padding-top:8px;">
+
+      <!-- TABS -->
+      <div class="tool-tabs" style="margin-top:24px;" role="tablist" aria-label="Distribuciones">
+        <button class="tab-btn active" onclick="setDist('normal', this)" role="tab" aria-selected="true">Normal (Z)</button>
+        <button class="tab-btn" onclick="setDist('t', this)" role="tab" aria-selected="false">t-Student</button>
+        <button class="tab-btn" onclick="setDist('chi', this)" role="tab" aria-selected="false">Chi-Cuadrado (χ²)</button>
+      </div>
+
+      <div class="tool-layout">
+
+        <!-- SIDEBAR -->
+        <aside class="tool-sidebar">
+          <div class="card" style="padding:20px;">
+            <h3 id="dist-title" style="margin-bottom:16px;color:var(--dark-blue);">Distribución Normal</h3>
+
+            <!-- Parámetros dinámicos -->
+            <div id="params-area"></div>
+
+            <!-- Tipo de probabilidad -->
+            <div class="input-group">
+              <label for="prob-type">Tipo de Probabilidad</label>
+              <select id="prob-type" onchange="update()">
+                <option value="left">Cola Izquierda — P(X &lt; x)</option>
+                <option value="right">Cola Derecha — P(X &gt; x)</option>
+                <option value="both">Dos Colas (Simétrico)</option>
+              </select>
+            </div>
+
+            <div class="input-group">
+              <label id="label-val" for="input-x">Valor de x</label>
+              <input type="number" id="input-x" value="1.96" step="0.01" oninput="update()">
+            </div>
+
+            <div class="result-badge">
+              <span class="result-label" id="result-label">Probabilidad P</span>
+              <span class="result-val" id="res-prob">0.9750</span>
+            </div>
+          </div>
+
+          <div class="card" style="padding:16px;font-size:0.83rem;color:var(--text-muted);line-height:1.6;">
+            <strong style="color:var(--dark-blue);display:block;margin-bottom:6px;">📌 Nota técnica</strong>
+            Los gráficos utilizan la función de densidad de probabilidad (PDF) exacta con integración numérica para el sombreado. Las dos colas son calculadas correctamente para cada distribución usando jStat.
+          </div>
+        </aside>
+
+        <!-- CONTENIDO -->
+        <section class="tool-content">
+          <div class="card" style="padding:16px;">
+            <canvas id="statCanvas" style="width:100%;height:400px;display:block;" aria-label="Gráfico de distribución de probabilidad"></canvas>
+          </div>
+        </section>
+
+      </div>
+    </div>
+  </main>
+
+  <!-- FOOTER -->
+  <footer class="footer-mini">
+    <a href="index.html">← Volver a PHYSICS</a> &nbsp;·&nbsp; © 2026 PHYSICS — Quito, Ecuador
+  </footer>
+
+  <script>
+    let currentDist = 'normal';
+    const canvas = document.getElementById('statCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // Hamburguesa
+    document.getElementById('navToggle').addEventListener('click', () => {
+      const nl = document.getElementById('navLinks');
+      const open = nl.classList.toggle('open');
+      document.getElementById('navToggle').setAttribute('aria-expanded', open);
+    });
+
+    function setDist(type, btn) {
+      currentDist = type;
+      document.querySelectorAll('.tab-btn').forEach(b => { b.classList.remove('active'); b.setAttribute('aria-selected','false'); });
+      btn.classList.add('active'); btn.setAttribute('aria-selected','true');
+
+      const params = document.getElementById('params-area');
+      const title  = document.getElementById('dist-title');
+
+      if (type === 'normal') {
+        title.innerText = "Distribución Normal";
+        params.innerHTML = `
+          <div class="input-group"><label>Media (μ)</label><input type="number" id="p1" value="0" oninput="update()"></div>
+          <div class="input-group"><label>Desv. Estándar (σ)</label><input type="number" id="p2" value="1" min="0.1" step="0.1" oninput="update()"></div>`;
+      } else if (type === 't') {
+        title.innerText = "Distribución t-Student";
+        params.innerHTML = `<div class="input-group"><label>Grados de Libertad (df)</label><input type="number" id="p1" value="10" min="1" step="1" oninput="update()"></div>`;
+        document.getElementById('input-x').value = 2.228;
+      } else {
+        title.innerText = "Distribución Chi-Cuadrado";
+        params.innerHTML = `<div class="input-group"><label>Grados de Libertad (df)</label><input type="number" id="p1" value="5" min="1" step="1" oninput="update()"></div>`;
+        document.getElementById('input-x').value = 11.07;
+        // Chi² solo tiene cola derecha/izquierda
+        document.getElementById('prob-type').value = 'right';
+      }
+      update();
+    }
+
+    function update() {
+      const x    = parseFloat(document.getElementById('input-x').value);
+      const type = document.getElementById('prob-type').value;
+      const p1   = parseFloat(document.getElementById('p1').value) || 0;
+      const p2   = document.getElementById('p2') ? parseFloat(document.getElementById('p2').value) || 1 : null;
+
+      let prob = 0;
+
+      // ── CÁLCULO CORRECTO PARA CADA DISTRIBUCIÓN ──
+      if (currentDist === 'normal') {
+        const cdf = jStat.normal.cdf(x, p1, p2);
+        if (type === 'left')  prob = cdf;
+        if (type === 'right') prob = 1 - cdf;
+        if (type === 'both') {
+          // Dos colas: P(|X-μ| > |x-μ|) = 2 * P(X > |x-μ| + μ)
+          const z = Math.abs((x - p1) / p2);
+          prob = 2 * (1 - jStat.normal.cdf(z, 0, 1));
+        }
+      } else if (currentDist === 't') {
+        const cdf = jStat.studentt.cdf(x, p1);
+        if (type === 'left')  prob = cdf;
+        if (type === 'right') prob = 1 - cdf;
+        if (type === 'both')  prob = 2 * (1 - jStat.studentt.cdf(Math.abs(x), p1)); // FIX ✓
+      } else {
+        // Chi² — solo cola derecha es usual en pruebas de hipótesis
+        const cdf = jStat.chisquare.cdf(x, p1);
+        if (type === 'left')  prob = cdf;
+        if (type === 'right') prob = 1 - cdf;
+        if (type === 'both')  prob = 2 * Math.min(cdf, 1 - cdf); // FIX ✓
+      }
+
+      document.getElementById('res-prob').innerText = prob.toFixed(4);
+      document.getElementById('result-label').innerText =
+        type === 'left' ? 'P(X < x)' : type === 'right' ? 'P(X > x)' : 'P dos colas';
+
+      draw(x, p1, p2, type);
+    }
+
+    function draw(valX, p1, p2, type) {
+      const w = canvas.width  = canvas.offsetWidth * window.devicePixelRatio;
+      const h = canvas.height = 400 * window.devicePixelRatio;
+      const scale = window.devicePixelRatio;
+      ctx.setTransform(scale, 0, 0, scale, 0, 0);
+      const cw = w / scale, ch = h / scale;
+
+      ctx.clearRect(0, 0, cw, ch);
+
+      let minX = -4, maxX = 4;
+      if (currentDist === 'chi') { minX = 0; maxX = (p1 || 1) + 20; }
+      if (currentDist === 'normal' && p2 > 1) { minX = p1 - 4*p2; maxX = p1 + 4*p2; }
+
+      const pad = 50;
+      const mapX = x => pad + (x - minX) / (maxX - minX) * (cw - 2*pad);
+      const mapY = y => ch - pad - y / 0.45 * (ch - 2*pad);
+
+      const pdf = x => {
+        if (currentDist === 'normal') return jStat.normal.pdf(x, p1, p2 || 1);
+        if (currentDist === 't')      return jStat.studentt.pdf(x, p1 || 1);
+        if (currentDist === 'chi')    return jStat.chisquare.pdf(x, p1 || 1);
+      };
+
+      const steps = 300;
+      const dx = (maxX - minX) / steps;
+
+      // Área sombreada
+      ctx.fillStyle = 'rgba(37,99,235,0.18)';
+      ctx.beginPath();
+      ctx.moveTo(mapX(minX), mapY(0));
+      for (let i = 0; i <= steps; i++) {
+        const xi = minX + i * dx;
+        const yi = pdf(xi);
+        const fill =
+          (type === 'left'  && xi <= valX) ||
+          (type === 'right' && xi >= valX) ||
+          (type === 'both'  && Math.abs(xi - (currentDist === 'normal' ? p1 : 0)) >= Math.abs(valX - (currentDist === 'normal' ? p1 : 0)));
+        ctx.lineTo(mapX(xi), fill ? mapY(yi) : mapY(0));
+      }
+      ctx.lineTo(mapX(maxX), mapY(0));
+      ctx.closePath();
+      ctx.fill();
+
+      // Eje X
+      ctx.strokeStyle = '#CBD5E1'; ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(pad, mapY(0)); ctx.lineTo(cw - pad, mapY(0)); ctx.stroke();
+
+      // Curva principal
+      ctx.strokeStyle = '#2563EB'; ctx.lineWidth = 2.5; ctx.lineJoin = 'round';
+      ctx.beginPath();
+      for (let i = 0; i <= steps; i++) {
+        const xi = minX + i * dx;
+        const y  = mapY(pdf(xi));
+        i === 0 ? ctx.moveTo(mapX(xi), y) : ctx.lineTo(mapX(xi), y);
+      }
+      ctx.stroke();
+
+      // Línea vertical en valX
+      ctx.setLineDash([5, 4]); ctx.strokeStyle = '#1E293B'; ctx.lineWidth = 1.5;
+      ctx.beginPath(); ctx.moveTo(mapX(valX), mapY(0)); ctx.lineTo(mapX(valX), mapY(pdf(valX))); ctx.stroke();
+      ctx.setLineDash([]);
+
+      ctx.fillStyle = '#1E293B'; ctx.font = "bold 12px Inter";
+      ctx.textAlign = "center";
+      ctx.fillText(`x = ${valX}`, mapX(valX), mapY(0) + 18);
+    }
+
+    window.onload = () => {
+      const firstTab = document.querySelector('.tab-btn');
+      setDist('normal', firstTab);
+    };
+    window.addEventListener('resize', update);
+  </script>
+</body>
+</html>

@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Estática y Dinámica — Lab de Caída | PHYSICS</title>
+  <meta name="description" content="Simulador de caída libre con arrastre lineal. Compara la trayectoria ideal vs fricción en tiempo real. Herramienta de física para ingeniería.">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚙️</text></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&family=Fira+Code&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+  <style>
+    .sim-canvas { display: block; border-radius: 8px; background: white; }
+    .controls-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; }
+  </style>
+</head>
+<body>
+
+  <nav class="nav-physics" role="navigation" aria-label="Navegación principal">
+    <div class="container nav-inner">
+      <a href="index.html" class="nav-logo">PHYSICS<span>.</span></a>
+      <button class="nav-toggle" id="navToggle" aria-expanded="false" aria-controls="navLinks" aria-label="Abrir menú">
+        <span></span><span></span><span></span>
+      </button>
+      <ul class="nav-links" id="navLinks" role="list">
+        <li><a href="index.html">Inicio</a></li>
+        <li><a href="index.html#cursos" class="nav-active">Asignaturas</a></li>
+        <li><a href="calculadora.html">Calculadora</a></li>
+        <li><a href="index.html#contacto">Contacto</a></li>
+      </ul>
+      <a href="https://wa.me/593995324419" target="_blank" class="btn btn-primary btn-sm nav-cta" rel="noopener">Reservar clase</a>
+    </div>
+  </nav>
+
+  <header class="tool-hero">
+    <div class="container">
+      <div class="breadcrumb"><a href="index.html">PHYSICS</a> <span>›</span> <span>Estática y Dinámica</span></div>
+      <h1>Laboratorio de <span>Caída Libre</span></h1>
+      <p>Compara la caída ideal frente a la caída con arrastre lineal. Observa cómo la fricción afecta la velocidad de impacto y los rebotes en tiempo real.</p>
+    </div>
+  </header>
+
+  <main>
+    <div class="container" style="padding:24px 24px;">
+      <div class="card" style="padding:16px;margin-bottom:20px;">
+        <canvas id="simCanvas" class="sim-canvas" width="800" height="380" style="width:100%;" aria-label="Simulación de caída libre"></canvas>
+      </div>
+      <div class="card" style="padding:20px;">
+        <h4 style="margin-bottom:16px;color:var(--dark-blue);">Controles de Simulación</h4>
+        <div class="controls-grid">
+          <div class="input-group">
+            <label for="hInput">Altura Inicial (px)</label>
+            <input type="number" id="hInput" value="50" min="20" max="300" onchange="resetSim()">
+          </div>
+          <div class="input-group">
+            <label>Coef. Restitución (e): <span id="eVal" style="color:var(--electric-blue);font-weight:700;">0.80</span></label>
+            <input type="range" id="eSlider" min="0" max="1" step="0.01" value="0.8">
+          </div>
+          <div class="input-group">
+            <label>Coef. Arrastre (k): <span id="kVal" style="color:var(--electric-blue);font-weight:700;">0.05</span></label>
+            <input type="range" id="kSlider" min="0" max="0.2" step="0.001" value="0.05">
+          </div>
+          <div class="input-group" style="display:flex;align-items:center;gap:10px;padding-top:20px;">
+            <input type="checkbox" id="pauseCheck" style="width:auto;padding:0;border:none;">
+            <label for="pauseCheck" style="text-transform:none;font-size:0.9rem;font-weight:600;color:var(--text-main);">Pausar simulación</label>
+          </div>
+          <div style="display:flex;align-items:flex-end;">
+            <button class="btn btn-primary btn-block btn-sm" onclick="resetSim()">Reiniciar</button>
+          </div>
+        </div>
+        <div style="margin-top:16px;padding:12px;background:var(--bg);border-radius:8px;font-size:0.82rem;color:var(--text-muted);">
+          <strong style="color:var(--dark-blue);">🔵 Azul:</strong> Caída ideal (sin arrastre) &nbsp;|&nbsp; <strong style="color:var(--danger);">🔴 Rojo:</strong> Caída con arrastre lineal F = mg − kv
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <footer class="footer-mini">
+    <a href="index.html">← Volver a PHYSICS</a> &nbsp;·&nbsp; © 2026 PHYSICS — Quito, Ecuador
+  </footer>
+
+  <script>
+    document.getElementById('navToggle').addEventListener('click', () => {
+      const nl = document.getElementById('navLinks');
+      const open = nl.classList.toggle('open');
+      document.getElementById('navToggle').setAttribute('aria-expanded', open);
+    });
+
+    const canvas = document.getElementById('simCanvas');
+    const ctx = canvas.getContext('2d');
+    const g = 0.5, floorY = 360, radius = 15;
+    let ballIdeal = {y:50,vy:0}, ballDrag = {y:50,vy:0};
+
+    function resetSim() {
+      const sy = parseInt(document.getElementById('hInput').value);
+      ballIdeal.y = ballDrag.y = sy;
+      ballIdeal.vy = ballDrag.vy = 0;
+    }
+
+    function update() {
+      if (document.getElementById('pauseCheck').checked) return;
+      const e = parseFloat(document.getElementById('eSlider').value);
+      const k = parseFloat(document.getElementById('kSlider').value);
+      document.getElementById('eVal').innerText = e.toFixed(2);
+      document.getElementById('kVal').innerText = k.toFixed(3);
+
+      ballIdeal.vy += g; ballIdeal.y += ballIdeal.vy;
+      if (ballIdeal.y + radius >= floorY) { ballIdeal.vy = -ballIdeal.vy * e; ballIdeal.y = floorY - radius; }
+
+      const a = g - (k * ballDrag.vy);
+      ballDrag.vy += a; ballDrag.y += ballDrag.vy;
+      if (ballDrag.y + radius >= floorY) { ballDrag.vy = -ballDrag.vy * e; ballDrag.y = floorY - radius; }
+    }
+
+    function draw() {
+      const w = canvas.offsetWidth;
+      if (canvas.width !== w) canvas.width = w;
+
+      ctx.fillStyle = '#f8fafc'; ctx.fillRect(0,0,canvas.width,canvas.height);
+      ctx.fillStyle = '#78350f'; ctx.fillRect(0, floorY, canvas.width, canvas.height - floorY);
+
+      [[ballIdeal,'#2563eb',canvas.width*0.33],[ballDrag,'#ef4444',canvas.width*0.66]].forEach(([ball,color,x])=>{
+        const shadowW = Math.max(5, 18-(floorY-ball.y)/18);
+        ctx.fillStyle='rgba(0,0,0,0.1)'; ctx.beginPath();
+        ctx.ellipse(x,floorY,shadowW,5,0,0,Math.PI*2); ctx.fill();
+        ctx.beginPath(); ctx.arc(x,ball.y,radius,0,Math.PI*2);
+        ctx.fillStyle=color; ctx.fill();
+        ctx.strokeStyle='rgba(0,0,0,0.15)'; ctx.lineWidth=1.5; ctx.stroke();
+        ctx.fillStyle='#1e293b'; ctx.font='bold 12px Inter'; ctx.textAlign='center';
+        ctx.fillText(color==='#2563eb'?'IDEAL':'ARRASTRE', x, ball.y-24);
+        ctx.fillStyle='#64748b'; ctx.font='11px Fira Code';
+        ctx.fillText(`v: ${Math.abs(ball.vy).toFixed(2)} px/f`, x, ball.y+34);
+      });
+    }
+
+    function loop() { update(); draw(); requestAnimationFrame(loop); }
+    resetSim(); loop();
+  </script>
+</body>
+</html>

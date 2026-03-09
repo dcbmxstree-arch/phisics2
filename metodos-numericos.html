@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Métodos Numéricos — Newton-Raphson | PHYSICS</title>
+  <meta name="description" content="Simulador del método de Newton-Raphson con visualización gráfica de tangentes e iteraciones. Herramienta interactiva de métodos numéricos para ingeniería.">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚙️</text></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=Fira+Code:wght@400&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/11.8.0/math.js"></script>
+</head>
+<body>
+
+  <!-- NAVBAR -->
+  <nav class="nav-physics" role="navigation" aria-label="Navegación principal">
+    <div class="container nav-inner">
+      <a href="index.html" class="nav-logo">PHYSICS<span>.</span></a>
+      <button class="nav-toggle" id="navToggle" aria-expanded="false" aria-controls="navLinks" aria-label="Abrir menú">
+        <span></span><span></span><span></span>
+      </button>
+      <ul class="nav-links" id="navLinks" role="list">
+        <li><a href="index.html">Inicio</a></li>
+        <li><a href="index.html#cursos" class="nav-active">Asignaturas</a></li>
+        <li><a href="calculadora.html">Calculadora</a></li>
+        <li><a href="index.html#contacto">Contacto</a></li>
+      </ul>
+      <a href="https://wa.me/593995324419" target="_blank" class="btn btn-primary btn-sm nav-cta" rel="noopener">Reservar clase</a>
+    </div>
+  </nav>
+
+  <!-- TOOL HERO -->
+  <header class="tool-hero">
+    <div class="container">
+      <div class="breadcrumb"><a href="index.html">PHYSICS</a> <span>›</span> <span>Métodos Numéricos</span></div>
+      <h1>Newton-Raphson <span>Interactivo</span></h1>
+      <p>Visualiza el proceso iterativo de convergencia hacia la raíz de cualquier función diferenciable.</p>
+    </div>
+  </header>
+
+  <main>
+    <div class="container">
+      <div class="tool-layout">
+
+        <!-- SIDEBAR -->
+        <aside class="tool-sidebar">
+          <div class="card" style="padding:20px;">
+            <h3 style="margin-bottom:16px;color:var(--dark-blue);">Parámetros</h3>
+
+            <div class="input-group">
+              <label for="input-fx">Función f(x)</label>
+              <input type="text" id="input-fx" value="x^3 - 2*x - 5" style="font-family:'Fira Code',monospace;">
+            </div>
+
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+              <div class="input-group">
+                <label for="input-x0">x₀ inicial</label>
+                <input type="number" id="input-x0" value="1.0" step="0.1">
+              </div>
+              <div class="input-group">
+                <label for="input-tol">Tolerancia</label>
+                <input type="text" id="input-tol" value="1e-6" style="font-family:'Fira Code',monospace;">
+              </div>
+            </div>
+
+            <div id="status-box" style="margin-top:8px;padding:10px;border-radius:8px;font-size:0.85rem;font-weight:600;"></div>
+          </div>
+
+          <div class="card" style="padding:18px;">
+            <h4 style="margin-bottom:10px;color:var(--dark-blue);">Fórmula del Método</h4>
+            <p style="font-size:0.85rem;color:var(--text-muted);margin-bottom:10px;">La tangente a f(x) en cada punto guía hacia la raíz:</p>
+            <div style="background:var(--dark-blue);color:#60a5fa;padding:12px;border-radius:8px;text-align:center;font-family:'Fira Code',monospace;font-size:1rem;">
+              x<sub style="color:#fbbf24">n+1</sub> = x<sub style="color:#fbbf24">n</sub> − f(x<sub>n</sub>) / f′(x<sub>n</sub>)
+            </div>
+            <p style="font-size:0.78rem;color:var(--text-muted);margin-top:10px;">Convergencia cuadrática cuando f′(raíz) ≠ 0. Máximo 20 iteraciones.</p>
+          </div>
+        </aside>
+
+        <!-- CONTENIDO -->
+        <section class="tool-content">
+          <div class="card" style="padding:0;overflow:hidden;">
+            <canvas id="newtonCanvas" style="display:block;width:100%;height:480px;" aria-label="Gráfico Newton-Raphson"></canvas>
+          </div>
+          <div class="card" style="padding:16px;margin-top:0;">
+            <h4 style="margin-bottom:12px;color:var(--dark-blue);">Tabla de Iteraciones</h4>
+            <div style="overflow-x:auto;max-height:280px;">
+              <table class="data-table" id="iter-table">
+                <thead><tr><th>k</th><th>xₖ</th><th>f(xₖ)</th><th>f′(xₖ)</th><th>Error</th></tr></thead>
+                <tbody></tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+      </div>
+    </div>
+  </main>
+
+  <footer class="footer-mini">
+    <a href="index.html">← Volver a PHYSICS</a> &nbsp;·&nbsp; © 2026 PHYSICS — Quito, Ecuador
+  </footer>
+
+  <script>
+    document.getElementById('navToggle').addEventListener('click', () => {
+      const nl = document.getElementById('navLinks');
+      const open = nl.classList.toggle('open');
+      document.getElementById('navToggle').setAttribute('aria-expanded', open);
+    });
+
+    const canvas = document.getElementById('newtonCanvas');
+    const ctx = canvas.getContext('2d');
+
+    function init() {
+      resize();
+      ['input-fx','input-x0','input-tol'].forEach(id =>
+        document.getElementById(id).addEventListener('input', calculate)
+      );
+      window.addEventListener('resize', resize);
+      calculate();
+    }
+
+    function resize() {
+      canvas.width  = canvas.parentElement.getBoundingClientRect().width;
+      canvas.height = 480;
+      calculate();
+    }
+
+    function calculate() {
+      const fxStr  = document.getElementById('input-fx').value;
+      const x0     = parseFloat(document.getElementById('input-x0').value);
+      const tol    = parseFloat(document.getElementById('input-tol').value);
+      const status = document.getElementById('status-box');
+      const tbody  = document.querySelector('#iter-table tbody');
+      tbody.innerHTML = '';
+
+      try {
+        const f  = math.parse(fxStr).compile();
+        const df = math.derivative(fxStr, 'x').compile();
+        let x = x0, iters = [], converged = false;
+
+        for (let k = 0; k < 20; k++) {
+          const y  = f.evaluate({ x });
+          const dy = df.evaluate({ x });
+          const err = k === 0 ? null : Math.abs(x - iters[k-1].x);
+          iters.push({ k, x, y, dy, err });
+          if (k > 0 && err < tol) { converged = true; break; }
+          if (Math.abs(dy) < 1e-12) break;
+          x = x - y / dy;
+        }
+
+        iters.forEach(it => {
+          const tr = tbody.insertRow();
+          tr.innerHTML = `<td>${it.k}</td><td>${it.x.toFixed(6)}</td><td>${it.y.toExponential(2)}</td><td>${it.dy.toExponential(2)}</td><td>${it.err !== null ? it.err.toExponential(2) : '—'}</td>`;
+        });
+
+        status.style.cssText = `background:${converged?'#ECFDF5':'#FFF7ED'};color:${converged?'#065F46':'#92400E'};border:1px solid ${converged?'#A7F3D0':'#FCD34D'};`;
+        status.innerText = converged ? `✓ Convergió: x ≈ ${x.toFixed(6)}` : '⚠ No convergió en 20 iteraciones';
+
+        drawGraph(f, iters);
+      } catch(e) {
+        status.style.cssText = 'background:#FEF2F2;color:#991B1B;border:1px solid #FECACA;';
+        status.innerText = '✕ Error en la función: revisa la sintaxis';
+      }
+    }
+
+    function drawGraph(f, iters) {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      if (!iters.length) return;
+
+      const root  = iters[iters.length-1].x;
+      const xS    = iters[0].x;
+      let minX = Math.min(xS, root) - 2;
+      let maxX = Math.max(xS, root) + 2;
+      let minY = -5, maxY = 5;
+
+      for (let xi = minX; xi <= maxX; xi += (maxX-minX)/40) {
+        try {
+          const yi = f.evaluate({ x: xi });
+          if (isFinite(yi)) { if (yi < minY) minY = yi-1; if (yi > maxY) maxY = yi+1; }
+        } catch(e) {}
+      }
+
+      const pad  = 40;
+      const mX = x => (x - minX) / (maxX - minX) * (canvas.width - 2*pad) + pad;
+      const mY = y => canvas.height - pad - (y - minY) / (maxY - minY) * (canvas.height - 2*pad);
+
+      // Grid
+      ctx.strokeStyle = '#F1F5F9'; ctx.lineWidth = 1;
+      for (let i = Math.floor(minX); i <= maxX; i++) { ctx.beginPath(); ctx.moveTo(mX(i),0); ctx.lineTo(mX(i),canvas.height); ctx.stroke(); }
+
+      // Ejes
+      ctx.strokeStyle = '#94A3B8'; ctx.lineWidth = 1.5;
+      ctx.beginPath(); ctx.moveTo(pad, mY(0)); ctx.lineTo(canvas.width-pad, mY(0)); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(mX(0), 0); ctx.lineTo(mX(0), canvas.height); ctx.stroke();
+
+      // Función
+      ctx.strokeStyle = '#2563EB'; ctx.lineWidth = 2.5; ctx.lineJoin = 'round';
+      ctx.beginPath();
+      let first = true;
+      for (let xi = minX; xi <= maxX; xi += (maxX-minX)/300) {
+        try {
+          const yi = f.evaluate({ x: xi });
+          if (!isFinite(yi)) { first = true; continue; }
+          first ? ctx.moveTo(mX(xi), mY(yi)) : ctx.lineTo(mX(xi), mY(yi));
+          first = false;
+        } catch(e) {}
+      }
+      ctx.stroke();
+
+      // Tangentes y puntos
+      iters.forEach((it, i) => {
+        if (i < iters.length-1) {
+          ctx.setLineDash([4,4]); ctx.strokeStyle = '#94A3B8'; ctx.lineWidth = 1;
+          ctx.beginPath();
+          ctx.moveTo(mX(it.x), mY(it.y));
+          ctx.lineTo(mX(iters[i+1].x), mY(0));
+          ctx.stroke(); ctx.setLineDash([]);
+        }
+        ctx.fillStyle = i === 0 ? '#10B981' : '#F59E0B';
+        ctx.beginPath(); ctx.arc(mX(it.x), mY(it.y), 5, 0, 7); ctx.fill();
+      });
+
+      // Raíz
+      ctx.fillStyle = '#EF4444';
+      ctx.beginPath(); ctx.arc(mX(root), mY(0), 7, 0, 7); ctx.fill();
+      ctx.strokeStyle = '#fff'; ctx.lineWidth = 2; ctx.stroke();
+      ctx.font = 'bold 13px Inter'; ctx.fillStyle = '#1E293B';
+      ctx.fillText(`Raíz ≈ ${root.toFixed(5)}`, mX(root)+10, mY(0)-12);
+    }
+
+    window.onload = init;
+  </script>
+</body>
+</html>

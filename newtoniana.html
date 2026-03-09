@@ -1,0 +1,965 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Colisión Unidimensional | PHYSICS — Mecánica Newtoniana</title>
+  <meta name="description" content="Simulador de colisiones 1D: elástica, inelástica y parcial. Conservación de momentum, coeficiente de restitución y balance energético con animación física en tiempo real.">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>💥</text></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+  <style>
+    body { background: var(--bg); }
+    :root {
+      --nw-primary: #65a30d;
+      --nw-light:   #f7fee7;
+      --nw-mid:     #d9f99d;
+      --nw-dark:    #365314;
+      --nw-p1:      #2563eb;
+      --nw-p2:      #ea580c;
+    }
+
+    /* Canvas wrapper */
+    .nw-canvas-wrap {
+      background: #eef2f7;
+      border: 1px solid var(--border);
+      border-radius: 10px 10px 0 0;
+      overflow: hidden;
+    }
+    .nw-canvas-wrap canvas { display: block; width: 100%; height: auto; }
+
+    /* Botones de animación pegados debajo del canvas */
+    .anim-bar {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      background: var(--white);
+      border: 1px solid var(--border);
+      border-top: none;
+      border-radius: 0 0 10px 10px;
+      padding: 10px 14px;
+    }
+    .anim-btn {
+      padding: 8px 18px;
+      border-radius: 7px;
+      border: 1.5px solid var(--border);
+      background: var(--white);
+      font-size: 0.82rem;
+      font-weight: 700;
+      cursor: pointer;
+      font-family: 'Inter', sans-serif;
+      transition: var(--transition);
+      color: var(--text-main);
+    }
+    .anim-btn:hover  { border-color: var(--nw-primary); color: var(--nw-dark); }
+    .anim-btn.go     { background: var(--nw-primary); border-color: var(--nw-primary); color: #fff; }
+    .anim-btn.go:hover { background: #4d7c0f; }
+    .anim-phase-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.78rem;
+      font-weight: 700;
+      padding: 5px 12px;
+      border-radius: 20px;
+      background: var(--nw-light);
+      color: var(--nw-dark);
+      border: 1px solid var(--nw-mid);
+      letter-spacing: .3px;
+      margin-left: auto;
+    }
+    .phase-dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: var(--nw-primary);
+      flex-shrink: 0;
+    }
+    .phase-dot.impact { background: #f59e0b; }
+    .phase-dot.after  { background: var(--nw-p2); }
+
+    /* Speed slider */
+    .speed-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.75rem;
+      color: var(--text-muted);
+    }
+    .speed-row input[type=range] { width: 80px; accent-color: var(--nw-primary); }
+    .speed-val { font-weight: 700; color: var(--nw-primary); min-width: 28px; }
+
+    /* Result cards */
+    .nw-quartet {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 8px;
+      margin-bottom: 14px;
+    }
+    .nw-quad {
+      border-radius: 8px; padding: 10px 8px;
+      text-align: center; border: 1px solid var(--border);
+    }
+    .nw-quad-label {
+      font-size: 0.66rem; font-weight: 700; text-transform: uppercase;
+      letter-spacing: .4px; display: block; margin-bottom: 3px; color: var(--text-muted);
+    }
+    .nw-quad-val {
+      font-size: 1.05rem; font-weight: 800; display: block;
+      font-variant-numeric: tabular-nums;
+    }
+
+    /* Step blocks */
+    .nw-step {
+      border-left: 3px solid var(--nw-primary);
+      padding: 10px 14px; margin-bottom: 8px;
+      background: var(--nw-light); border-radius: 0 8px 8px 0;
+    }
+    .nw-step-title {
+      font-size: 0.72rem; font-weight: 800; text-transform: uppercase;
+      letter-spacing: .5px; color: var(--nw-dark); margin-bottom: 6px;
+    }
+    .nw-line {
+      display: flex; justify-content: space-between; align-items: baseline;
+      padding: 3px 0; border-bottom: 1px solid var(--nw-mid);
+      font-size: 0.83rem; gap: 8px;
+    }
+    .nw-line:last-child { border-bottom: none; }
+    .nw-line .lbl { color: var(--text-muted); flex-shrink: 0; }
+    .nw-line .val {
+      font-family: 'Fira Code', monospace; font-size: 0.81rem;
+      color: var(--nw-dark); font-weight: 600; text-align: right;
+    }
+    .nw-line.hl  .val { color: var(--nw-primary); font-size: 0.9rem; }
+    .nw-line.hl2 .val { color: var(--nw-p2); font-size: 0.9rem; }
+
+    /* Sidebar helpers */
+    .sect-label {
+      font-size: 0.72rem; font-weight: 800; text-transform: uppercase;
+      letter-spacing: .5px; color: var(--text-muted);
+      border-bottom: 1px solid var(--border); padding-bottom: 5px; margin-bottom: 10px;
+    }
+    .e-label {
+      display: inline-block; padding: 3px 9px; border-radius: 20px;
+      font-size: 0.72rem; font-weight: 700; margin-left: 8px; letter-spacing: .3px;
+    }
+    .e-elastic   { background: #d1fae5; color: #065f46; }
+    .e-partial   { background: #fef3c7; color: #92400e; }
+    .e-inelastic { background: #fee2e2; color: #991b1b; }
+    .angle-row { display: flex; align-items: center; gap: 8px; }
+    .angle-row input[type=range] { flex: 1; accent-color: var(--nw-primary); }
+    .p-dot {
+      display: inline-block; width: 10px; height: 10px;
+      border-radius: 50%; margin-right: 4px; vertical-align: middle;
+    }
+    .ex-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-top: 8px; }
+    .ex-btn {
+      background: var(--white); border: 1px solid var(--border); border-radius: 6px;
+      padding: 7px 8px; font-size: 0.74rem; cursor: pointer; text-align: left;
+      transition: var(--transition); font-family: 'Inter', sans-serif;
+      line-height: 1.4; color: var(--text-main);
+    }
+    .ex-btn strong {
+      display: block; font-size: 0.66rem; font-weight: 700; color: var(--text-muted);
+      text-transform: uppercase; letter-spacing: .3px; margin-bottom: 2px;
+    }
+    .ex-btn:hover { border-color: var(--nw-primary); background: var(--nw-light); color: var(--nw-dark); }
+    .fref { font-size: 0.77rem; line-height: 1.8; }
+    .fref .fr {
+      display: flex; gap: 8px; padding: 2px 0;
+      border-bottom: 1px solid var(--border); align-items: baseline;
+    }
+    .fref .fr:last-child { border-bottom: none; }
+    .fref .fs { min-width: 48px; font-family: 'Fira Code', monospace; font-size: 0.76rem; color: var(--nw-primary); font-weight: 600; }
+    .fref .fe { font-family: 'Fira Code', monospace; font-size: 0.75rem; flex: 1; }
+    .nw-error {
+      display: none; background: #fee2e2; border: 1px solid #fca5a5;
+      border-radius: 8px; padding: 9px 13px; font-size: 0.83rem; color: #991b1b; margin-top: 8px;
+    }
+    .nw-error.visible { display: block; }
+    .nw-warn {
+      display: none; background: #fef9c3; border: 1px solid #fde047;
+      border-radius: 8px; padding: 8px 13px; font-size: 0.79rem; color: #854d0e; margin-top: 6px;
+    }
+    .nw-warn.visible { display: block; }
+
+    @media (max-width: 768px) {
+      .nw-quartet { grid-template-columns: 1fr 1fr; }
+      .ex-grid    { grid-template-columns: 1fr; }
+      .anim-bar   { flex-wrap: wrap; }
+    }
+    @media (max-width: 900px) {
+      .tool-layout { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav class="nav-physics" role="navigation" aria-label="Navegación principal">
+  <div class="container nav-inner">
+    <a href="index.html" class="nav-logo">PHYSICS<span>.</span></a>
+    <button class="nav-toggle" id="navToggle" aria-expanded="false" aria-controls="navLinks"><span></span><span></span><span></span></button>
+    <ul class="nav-links" id="navLinks" role="list">
+      <li><a href="index.html">Inicio</a></li>
+      <li><a href="index.html#cursos" class="nav-active">Asignaturas</a></li>
+      <li><a href="calculadora.html">Calculadora</a></li>
+      <li><a href="fluidos.html">Fluidos</a></li>
+      <li><a href="newtoniana.html">Newtoniana</a></li>
+      <li><a href="index.html#contacto">Contacto</a></li>
+    </ul>
+    <a href="https://wa.me/593995324419" target="_blank" class="btn btn-primary btn-sm nav-cta" rel="noopener">Reservar clase</a>
+  </div>
+</nav>
+
+<!-- HERO -->
+<header class="tool-hero">
+  <div class="container">
+    <div class="breadcrumb">
+      <a href="index.html">PHYSICS</a><span>&rsaquo;</span>
+      <a href="index.html#cursos">Mecánica Newtoniana</a><span>&rsaquo;</span>
+      <span>Colisión 1D</span>
+    </div>
+    <h1>Choque <span>Unidimensional</span></h1>
+    <p>Simulación física de colisiones entre dos bloques. Conservación de cantidad de movimiento, coeficiente de restitución y balance de energía cinética.</p>
+  </div>
+</header>
+
+<!-- MAIN LAYOUT -->
+<div class="container">
+<div class="tool-layout" style="padding-bottom:40px;">
+
+  <!-- SIDEBAR -->
+  <aside class="tool-sidebar">
+
+    <!-- Parámetros -->
+    <div class="card">
+      <h3 style="font-size:1rem;margin-bottom:14px;color:var(--dark-blue);">Parámetros de colisión</h3>
+
+      <div class="sect-label">Bloque 1 <span class="p-dot" style="background:#2563eb;"></span></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+        <div class="input-group">
+          <label>m&#x2081; (kg)</label>
+          <input type="number" id="c1-m1" value="3" min="0.01" step="0.5">
+        </div>
+        <div class="input-group">
+          <label>v&#x2081; (m/s)</label>
+          <input type="number" id="c1-v1" value="5" step="0.5">
+        </div>
+      </div>
+
+      <div class="sect-label" style="margin-top:6px;">Bloque 2 <span class="p-dot" style="background:#ea580c;"></span></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+        <div class="input-group">
+          <label>m&#x2082; (kg)</label>
+          <input type="number" id="c1-m2" value="1" min="0.01" step="0.5">
+        </div>
+        <div class="input-group">
+          <label>v&#x2082; (m/s)</label>
+          <input type="number" id="c1-v2" value="-1" step="0.5">
+        </div>
+      </div>
+
+      <div class="input-group" style="margin-top:6px;">
+        <label>
+          Coef. de restitución e
+          <span class="e-label e-partial" id="e-label">Parcial</span>
+        </label>
+        <div class="angle-row">
+          <input type="range" id="c1-e-slider" min="0" max="1" step="0.01" value="0.6"
+            oninput="syncE(this.value,'slider')">
+          <input type="number" id="c1-e" value="0.6" min="0" max="1" step="0.05"
+            style="width:64px;padding:6px 8px;border:1px solid var(--border);border-radius:7px;font-family:'Fira Code',monospace;font-size:0.85rem;"
+            oninput="syncE(this.value,'num')">
+        </div>
+      </div>
+
+      <button class="btn btn-primary"
+        style="width:100%;background:var(--nw-primary);border-color:var(--nw-primary);margin-top:8px;"
+        onclick="calcCol1D()">
+        Calcular &#x2192;
+      </button>
+      <div class="nw-error" id="c1-error"></div>
+      <div class="nw-warn"  id="c1-warn"></div>
+    </div>
+
+    <!-- Ejemplos -->
+    <div class="card">
+      <div class="sect-label">Ejemplos rápidos</div>
+      <div class="ex-grid">
+        <button class="ex-btn" onclick="loadEx1D(0)">
+          <strong>Elástica perfecta (e=1)</strong>m&#x2081;=m&#x2082;=2 · v&#x2081;=4 · v&#x2082;=&#x2212;2
+        </button>
+        <button class="ex-btn" onclick="loadEx1D(1)">
+          <strong>Inelástica perfecta (e=0)</strong>m&#x2081;=3 · m&#x2082;=1 · v&#x2081;=5
+        </button>
+        <button class="ex-btn" onclick="loadEx1D(2)">
+          <strong>Parcialmente inelástica</strong>m&#x2081;=4 · m&#x2082;=2 · e=0.6
+        </button>
+        <button class="ex-btn" onclick="loadEx1D(3)">
+          <strong>Masa grande vs pequeña</strong>m&#x2081;=10 · m&#x2082;=1 · e=0.8
+        </button>
+      </div>
+    </div>
+
+    <!-- Fórmulas -->
+    <div class="card">
+      <div class="sect-label">Fórmulas clave</div>
+      <div class="fref">
+        <div class="fr"><span class="fs">e</span><span class="fe">= (v&#x2082;&#x2019;&#x2212;v&#x2081;&#x2019;) / (v&#x2081;&#x2212;v&#x2082;)</span></div>
+        <div class="fr"><span class="fs">&#x2206;p</span><span class="fe">= 0  (conservación siempre)</span></div>
+        <div class="fr"><span class="fs">v&#x2081;&#x2019;</span><span class="fe">= [(m&#x2081;&#x2212;em&#x2082;)v&#x2081;+m&#x2082;(1+e)v&#x2082;]/(m&#x2081;+m&#x2082;)</span></div>
+        <div class="fr"><span class="fs">v&#x2082;&#x2019;</span><span class="fe">= [(m&#x2082;&#x2212;em&#x2081;)v&#x2082;+m&#x2081;(1+e)v&#x2081;]/(m&#x2081;+m&#x2082;)</span></div>
+        <div class="fr"><span class="fs">J</span><span class="fe">= m&#x2081;(v&#x2081;&#x2019;&#x2212;v&#x2081;)</span></div>
+        <div class="fr"><span class="fs">&#x394;KE</span><span class="fe">&#x2264; 0  (e&lt;1 &#x2192; pérdida de energía)</span></div>
+        <div class="fr"><span class="fs">&#x3BC;_red</span><span class="fe">= m&#x2081;m&#x2082;/(m&#x2081;+m&#x2082;)</span></div>
+      </div>
+    </div>
+
+  </aside>
+
+  <!-- CONTENT -->
+  <div class="tool-content">
+
+    <!-- Canvas + barra de animación integrada -->
+    <div class="card" style="padding:14px;margin-bottom:20px;">
+      <div style="font-size:0.78rem;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text-muted);margin-bottom:8px;">
+        Simulación física — choque entre bloques
+      </div>
+
+      <div class="nw-canvas-wrap">
+        <canvas id="canvas-col1d" width="860" height="420"></canvas>
+      </div>
+
+      <!-- Barra de control pegada al canvas -->
+      <div class="anim-bar">
+        <button class="anim-btn go" id="btn-anim1d" onclick="toggleAnim1D()">&#x25B6; Simular</button>
+        <button class="anim-btn" onclick="resetAnim1D()">&#x21BA; Reiniciar</button>
+
+        <div class="speed-row">
+          <span>Velocidad:</span>
+          <input type="range" id="speed-slider" min="0.3" max="3" step="0.1" value="1"
+            oninput="updateSpeed(this.value)">
+          <span class="speed-val" id="speed-val">&#x00D7;1.0</span>
+        </div>
+
+        <div class="anim-phase-tag" id="phase-tag">
+          <span class="phase-dot" id="phase-dot"></span>
+          <span id="phase-txt">Listo</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Resultados numéricos -->
+    <div class="card" id="res-col1d" style="display:none;">
+      <div class="nw-quartet">
+        <div class="nw-quad" style="background:var(--nw-light);border-color:var(--nw-mid);">
+          <span class="nw-quad-label">v&#x2081;&#x2019; (m/s)</span>
+          <span class="nw-quad-val" style="color:var(--nw-p1);" id="r1-v1p">—</span>
+        </div>
+        <div class="nw-quad" style="background:#fff7ed;border-color:#fed7aa;">
+          <span class="nw-quad-label">v&#x2082;&#x2019; (m/s)</span>
+          <span class="nw-quad-val" style="color:var(--nw-p2);" id="r1-v2p">—</span>
+        </div>
+        <div class="nw-quad" style="background:#f0f9ff;border-color:#bae6fd;">
+          <span class="nw-quad-label">J (N&#xB7;s)</span>
+          <span class="nw-quad-val" style="color:#0369a1;" id="r1-J">—</span>
+        </div>
+        <div class="nw-quad" style="background:#fef2f2;border-color:#fecaca;">
+          <span class="nw-quad-label">&#x394;KE (J)</span>
+          <span class="nw-quad-val" style="color:#dc2626;" id="r1-dKE">—</span>
+        </div>
+      </div>
+
+      <div class="nw-step">
+        <div class="nw-step-title">Paso 1 — Cantidad de movimiento (N&#xB7;s)</div>
+        <div class="nw-line"><span class="lbl">p&#x2081; antes = m&#x2081;&#xB7;v&#x2081;</span><span class="val" id="r1-p1b">—</span></div>
+        <div class="nw-line"><span class="lbl">p&#x2082; antes = m&#x2082;&#xB7;v&#x2082;</span><span class="val" id="r1-p2b">—</span></div>
+        <div class="nw-line"><span class="lbl">p_total antes</span><span class="val" id="r1-ptb">—</span></div>
+        <div class="nw-line"><span class="lbl">p&#x2081;&#x2019; después = m&#x2081;&#xB7;v&#x2081;&#x2019;</span><span class="val" id="r1-p1a">—</span></div>
+        <div class="nw-line"><span class="lbl">p&#x2082;&#x2019; después = m&#x2082;&#xB7;v&#x2082;&#x2019;</span><span class="val" id="r1-p2a">—</span></div>
+        <div class="nw-line hl"><span class="lbl">p_total después</span><span class="val" id="r1-pta">—</span></div>
+        <div class="nw-line"><span class="lbl">&#x394;p_total (debe = 0)</span><span class="val" id="r1-dp">—</span></div>
+      </div>
+
+      <div class="nw-step" style="border-left-color:var(--nw-p2);">
+        <div class="nw-step-title" style="color:#9a3412;">Paso 2 — Velocidades post-colisión</div>
+        <div class="nw-line"><span class="lbl">v&#x2081;&#x2019; = [(m&#x2081;&#x2212;em&#x2082;)v&#x2081;+m&#x2082;(1+e)v&#x2082;]/(m&#x2081;+m&#x2082;)</span><span class="val" id="r1-v1pf">—</span></div>
+        <div class="nw-line"><span class="lbl">v&#x2082;&#x2019; = [(m&#x2082;&#x2212;em&#x2081;)v&#x2082;+m&#x2081;(1+e)v&#x2081;]/(m&#x2081;+m&#x2082;)</span><span class="val" id="r1-v2pf">—</span></div>
+        <div class="nw-line"><span class="lbl">e verificado = (v&#x2082;&#x2019;&#x2212;v&#x2081;&#x2019;)/(v&#x2081;&#x2212;v&#x2082;)</span><span class="val" id="r1-ev">—</span></div>
+      </div>
+
+      <div class="nw-step" style="border-left-color:#0369a1;">
+        <div class="nw-step-title" style="color:#0369a1;">Paso 3 — Energía cinética e impulso</div>
+        <div class="nw-line"><span class="lbl">KE antes = ½m&#x2081;v&#x2081;² + ½m&#x2082;v&#x2082;²</span><span class="val" id="r1-ke0">—</span></div>
+        <div class="nw-line"><span class="lbl">KE después = ½m&#x2081;v&#x2081;&#x2019;² + ½m&#x2082;v&#x2082;&#x2019;²</span><span class="val" id="r1-ke1">—</span></div>
+        <div class="nw-line hl2"><span class="lbl">&#x394;KE = KE&#x2019; &#x2212; KE</span><span class="val" id="r1-dkef">—</span></div>
+        <div class="nw-line"><span class="lbl">% energía perdida</span><span class="val" id="r1-pct">—</span></div>
+        <div class="nw-line"><span class="lbl">Impulso J = m&#x2081;(v&#x2081;&#x2019;&#x2212;v&#x2081;)</span><span class="val" id="r1-Jf">—</span></div>
+        <div class="nw-line"><span class="lbl">Masa reducida &#x3BC;_red = m&#x2081;m&#x2082;/(m&#x2081;+m&#x2082;)</span><span class="val" id="r1-mured">—</span></div>
+        <div class="nw-line"><span class="lbl">&#x394;KE_máx (e=0) = &#x2212;½&#x3BC;_red(v&#x2081;&#x2212;v&#x2082;)²</span><span class="val" id="r1-dkemax">—</span></div>
+      </div>
+    </div>
+
+  </div><!-- /tool-content -->
+</div><!-- /tool-layout -->
+</div><!-- /container -->
+
+<footer class="footer-mini">
+  <a href="index.html">&#x2190; Volver a PHYSICS</a> &nbsp;·&nbsp; © 2026 PHYSICS — Quito, Ecuador
+</footer>
+
+<a href="https://wa.me/593995324419" class="wa-float" target="_blank" rel="noopener" aria-label="WhatsApp">
+  <svg width="26" height="26" viewBox="0 0 24 24" fill="currentColor">
+    <path d="M12.031 6.172c-3.181 0-5.767 2.586-5.768 5.766-.001 1.298.38 2.27 1.019 3.287l-.582 2.128 2.182-.573c.978.58 1.911.928 3.145.929 3.178 0 5.767-2.587 5.768-5.766 0-3.18-2.587-5.771-5.764-5.771z"/>
+  </svg>
+</a>
+
+<script>
+/* ══════════════════════════════════════════════════════════════
+   PHYSICS — Colisión Unidimensional
+   Motor: Canvas API + requestAnimationFrame
+   Animación física con posición interpolada en tiempo real
+══════════════════════════════════════════════════════════════ */
+
+/* ── Navbar ── */
+document.getElementById('navToggle').addEventListener('click', function() {
+  var nl = document.getElementById('navLinks');
+  var op = nl.classList.toggle('open');
+  this.setAttribute('aria-expanded', op);
+});
+
+/* ── Helpers ── */
+function f3(v)  { return isFinite(v) ? v.toFixed(3) : '—'; }
+function f4(v)  { return isFinite(v) ? v.toFixed(4) : '—'; }
+function f2(v)  { return isFinite(v) ? v.toFixed(2) : '—'; }
+function set(id, txt) { var el = document.getElementById(id); if (el) el.textContent = txt; }
+function showErr(id, msg) { var el = document.getElementById(id); el.textContent = msg; el.classList.add('visible'); }
+function clearErr(id)     { document.getElementById(id).classList.remove('visible'); }
+function showWarn(id, msg){ var el = document.getElementById(id); if (!el) return; el.textContent = msg; el.classList.add('visible'); }
+function clearWarn(id)    { var el = document.getElementById(id); if (el) el.classList.remove('visible'); }
+
+/* ── Arrow ── */
+function drawArrow(ctx, x1, y1, x2, y2, color, lw) {
+  var dx = x2-x1, dy = y2-y1, len = Math.sqrt(dx*dx+dy*dy);
+  if (len < 3) return;
+  var angle = Math.atan2(dy, dx);
+  ctx.save();
+  ctx.strokeStyle = color; ctx.lineWidth = lw; ctx.fillStyle = color; ctx.setLineDash([]);
+  ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke();
+  var hs = Math.min(11, len*0.35);
+  ctx.beginPath();
+  ctx.moveTo(x2, y2);
+  ctx.lineTo(x2 - hs*Math.cos(angle-0.4), y2 - hs*Math.sin(angle-0.4));
+  ctx.lineTo(x2 - hs*Math.cos(angle+0.4), y2 - hs*Math.sin(angle+0.4));
+  ctx.closePath(); ctx.fill();
+  ctx.restore();
+}
+
+/* ══════════════════════════════════════════════════════════════
+   CÁLCULO
+══════════════════════════════════════════════════════════════ */
+
+var g_c1 = null;  /* resultado del cálculo */
+
+function syncE(val, src) {
+  var v = Math.min(1, Math.max(0, parseFloat(val) || 0));
+  if (src === 'slider') document.getElementById('c1-e').value = v.toFixed(2);
+  else                  document.getElementById('c1-e-slider').value = v;
+  var lbl = document.getElementById('e-label');
+  if (v >= 1)      { lbl.className = 'e-label e-elastic';   lbl.textContent = 'Elástica'; }
+  else if (v <= 0) { lbl.className = 'e-label e-inelastic'; lbl.textContent = 'Inelástica'; }
+  else             { lbl.className = 'e-label e-partial';   lbl.textContent = 'Parcial'; }
+}
+
+var ex1d = [
+  { m1:2,  v1:4, m2:2, v2:-2, e:1   },
+  { m1:3,  v1:5, m2:1, v2:-1, e:0   },
+  { m1:4,  v1:3, m2:2, v2:-1, e:0.6 },
+  { m1:10, v1:2, m2:1, v2:0,  e:0.8 }
+];
+function loadEx1D(i) {
+  var ex = ex1d[i];
+  document.getElementById('c1-m1').value = ex.m1;
+  document.getElementById('c1-v1').value = ex.v1;
+  document.getElementById('c1-m2').value = ex.m2;
+  document.getElementById('c1-v2').value = ex.v2;
+  document.getElementById('c1-e').value  = ex.e;
+  document.getElementById('c1-e-slider').value = ex.e;
+  syncE(ex.e, 'num');
+  calcCol1D();
+}
+
+function calcCol1D() {
+  clearErr('c1-error'); clearWarn('c1-warn');
+  var m1 = parseFloat(document.getElementById('c1-m1').value);
+  var v1 = parseFloat(document.getElementById('c1-v1').value);
+  var m2 = parseFloat(document.getElementById('c1-m2').value);
+  var v2 = parseFloat(document.getElementById('c1-v2').value);
+  var e  = parseFloat(document.getElementById('c1-e').value);
+
+  if (!isFinite(m1) || m1 <= 0) { showErr('c1-error', 'm₁ debe ser > 0'); return; }
+  if (!isFinite(m2) || m2 <= 0) { showErr('c1-error', 'm₂ debe ser > 0'); return; }
+  if (!isFinite(e)  || e < 0 || e > 1) { showErr('c1-error', 'e debe estar en [0, 1]'); return; }
+  if (!isFinite(v1) || !isFinite(v2))  { showErr('c1-error', 'Velocidades inválidas'); return; }
+  if (v1 <= v2) showWarn('c1-warn', 'Los bloques no se aproximan (v₁ ≤ v₂). Resultado matemático mostrado.');
+
+  var v1p = ((m1 - e*m2)*v1 + m2*(1+e)*v2) / (m1+m2);
+  var v2p = ((m2 - e*m1)*v2 + m1*(1+e)*v1) / (m1+m2);
+  var J   = m1*(v1p - v1);
+  var p1b = m1*v1, p2b = m2*v2, ptb = p1b+p2b;
+  var p1a = m1*v1p, p2a = m2*v2p, pta = p1a+p2a;
+  var dp  = pta - ptb;
+  var ke0 = 0.5*m1*v1*v1 + 0.5*m2*v2*v2;
+  var ke1 = 0.5*m1*v1p*v1p + 0.5*m2*v2p*v2p;
+  var dKE = ke1 - ke0;
+  var pct = ke0 > 0 ? (-dKE/ke0*100) : 0;
+  var mured   = m1*m2/(m1+m2);
+  var dkemax  = -0.5*mured*(v1-v2)*(v1-v2);
+  var ev = Math.abs(v1-v2) > 1e-12 ? (v2p-v1p)/(v1-v2) : e;
+
+  g_c1 = { m1,v1,m2,v2,e, v1p,v2p,J,
+            p1b,p2b,ptb, p1a,p2a,pta,dp,
+            ke0,ke1,dKE,pct,mured,dkemax,ev };
+
+  /* Fill result table */
+  set('r1-v1p',   f3(v1p)  + ' m/s');
+  set('r1-v2p',   f3(v2p)  + ' m/s');
+  set('r1-J',     f3(J)    + ' N·s');
+  set('r1-dKE',   f3(dKE)  + ' J');
+  set('r1-p1b',   f3(p1b)  + ' N·s');
+  set('r1-p2b',   f3(p2b)  + ' N·s');
+  set('r1-ptb',   f3(ptb)  + ' N·s');
+  set('r1-p1a',   f3(p1a)  + ' N·s');
+  set('r1-p2a',   f3(p2a)  + ' N·s');
+  set('r1-pta',   f3(pta)  + ' N·s');
+  set('r1-dp',    Math.abs(dp) < 1e-9 ? '\u2248 0  \u2713' : f4(dp));
+  set('r1-v1pf',  f3(v1p)  + ' m/s');
+  set('r1-v2pf',  f3(v2p)  + ' m/s');
+  set('r1-ev',    f4(ev)   + (Math.abs(ev-e) < 1e-9 ? '  \u2713' : ''));
+  set('r1-ke0',   f3(ke0)  + ' J');
+  set('r1-ke1',   f3(ke1)  + ' J');
+  set('r1-dkef',  f3(dKE)  + ' J');
+  set('r1-pct',   f2(pct)  + ' %');
+  set('r1-Jf',    f3(J)    + ' N·s');
+  set('r1-mured', f4(mured)+ ' kg');
+  set('r1-dkemax',f3(dkemax)+ ' J');
+
+  document.getElementById('res-col1d').style.display = 'block';
+  resetAnim1D();
+  drawStaticFrame();   /* muestra estado ANTES */
+}
+
+/* ══════════════════════════════════════════════════════════════
+   ANIMACIÓN FÍSICA — posición interpolada en tiempo real
+   
+   La simulación tiene 3 fases con duraciones reales en segundos:
+     FASE A (approach):  bloques se acercan desde los extremos
+     FASE B (impact):    flash de impacto (breve)
+     FASE C (depart):    bloques se alejan según v1', v2'
+
+   El tiempo se mide en segundos de simulación escalados por
+   animSpeed. La posición se calcula como x = x0 + v*t
+   para que el movimiento sea físicamente correcto.
+══════════════════════════════════════════════════════════════ */
+
+var animState = {
+  running: false,
+  raf:     null,
+  simT:    0,          /* tiempo de simulación (s) */
+  lastTS:  null,       /* timestamp del frame anterior */
+  speed:   1.0         /* multiplicador de velocidad */
+};
+
+/* Duración de cada fase en segundos de simulación */
+var DUR_A = 2.2;   /* aproximación */
+var DUR_B = 0.35;  /* impacto (flash) */
+var DUR_C = 2.8;   /* separación */
+var DUR_TOTAL = DUR_A + DUR_B + DUR_C;
+
+/* Canvas dimensions */
+var CW = 860, CH = 420;
+var FLOOR_Y = CH - 82;
+var BH = 76;                /* block height */
+var IMPACT_X = CW / 2;      /* punto de colisión en px */
+var PX_PER_S = 70;          /* pixels por segundo de vel. normalizada */
+
+function updateSpeed(val) {
+  animState.speed = parseFloat(val) || 1;
+  document.getElementById('speed-val').textContent = '\u00D7' + animState.speed.toFixed(1);
+}
+
+function setPhaseTag(phase) {
+  var dot  = document.getElementById('phase-dot');
+  var txt  = document.getElementById('phase-txt');
+  var data = {
+    before: { cls: '',        label: 'Aproximación' },
+    impact: { cls: 'impact',  label: '¡Impacto!'    },
+    after:  { cls: 'after',   label: 'Separación'   },
+    done:   { cls: '',        label: 'Completado'    },
+    ready:  { cls: '',        label: 'Listo'         }
+  };
+  var d = data[phase] || data.ready;
+  dot.className = 'phase-dot' + (d.cls ? ' ' + d.cls : '');
+  txt.textContent = d.label;
+}
+
+function toggleAnim1D() {
+  if (!g_c1) { calcCol1D(); return; }
+  if (animState.running) {
+    /* Pausar */
+    animState.running = false;
+    if (animState.raf) cancelAnimationFrame(animState.raf);
+    animState.raf = null;
+    document.getElementById('btn-anim1d').textContent = '\u25B6 Continuar';
+    document.getElementById('btn-anim1d').classList.add('go');
+  } else {
+    /* Arrancar / continuar */
+    animState.running  = true;
+    animState.lastTS   = null;
+    document.getElementById('btn-anim1d').textContent = '\u23F8 Pausar';
+    animFrame(null);
+  }
+}
+
+function animFrame(ts) {
+  if (!animState.running) return;
+  if (animState.lastTS !== null) {
+    var dtReal = Math.min((ts - animState.lastTS) / 1000, 0.05); /* s, cap 50ms */
+    animState.simT += dtReal * animState.speed;
+  }
+  animState.lastTS = ts;
+
+  var t = animState.simT;
+
+  if (t >= DUR_TOTAL) {
+    /* Fin: mostrar estado final estático */
+    animState.running = false;
+    drawFrameAtT(DUR_TOTAL);
+    setPhaseTag('done');
+    document.getElementById('btn-anim1d').textContent = '\u25B6 Simular';
+    document.getElementById('btn-anim1d').classList.add('go');
+    return;
+  }
+
+  drawFrameAtT(t);
+  animState.raf = requestAnimationFrame(animFrame);
+}
+
+function resetAnim1D() {
+  animState.running = false;
+  animState.simT    = 0;
+  animState.lastTS  = null;
+  if (animState.raf) { cancelAnimationFrame(animState.raf); animState.raf = null; }
+  document.getElementById('btn-anim1d').textContent = '\u25B6 Simular';
+  document.getElementById('btn-anim1d').classList.add('go');
+  setPhaseTag('ready');
+  drawStaticFrame();
+}
+
+/* ── Determina la posición de cada bloque según el tiempo ── */
+function getPositions(t) {
+  var c = g_c1;
+  if (!c) return null;
+
+  /* Anchos de bloque en px proporcionales a masa (min 50, max 120) */
+  var bw1 = Math.max(50, Math.min(120, 40 + c.m1 * 6));
+  var bw2 = Math.max(50, Math.min(120, 40 + c.m2 * 6));
+
+  /* Velocidades normalizadas para la visualización.
+     Escalamos para que la animación recorra bien el canvas.
+     El máximo valor absoluto de velocidad mapea a PX_PER_S px/s */
+  var vmax = Math.max(0.1, Math.abs(c.v1), Math.abs(c.v2), Math.abs(c.v1p), Math.abs(c.v2p));
+  var scale = PX_PER_S / vmax;
+
+  /* Posición en el instante del impacto:
+     bloque 1 → su borde derecho toca IMPACT_X
+     bloque 2 → su borde izquierdo toca IMPACT_X */
+  var x1_impact = IMPACT_X - bw1/2;
+  var x2_impact = IMPACT_X + bw2/2;
+
+  var x1, x2, phase;
+
+  if (t < DUR_A) {
+    /* FASE A — aproximación: retroceder desde impacto */
+    var ta = DUR_A - t;   /* tiempo restante hasta impacto */
+    x1 = x1_impact - c.v1 * scale * ta;
+    x2 = x2_impact - c.v2 * scale * ta;
+    phase = 'before';
+  } else if (t < DUR_A + DUR_B) {
+    /* FASE B — impacto */
+    x1 = x1_impact;
+    x2 = x2_impact;
+    phase = 'impact';
+  } else {
+    /* FASE C — separación */
+    var tc = t - (DUR_A + DUR_B);
+    x1 = x1_impact + c.v1p * scale * tc;
+    x2 = x2_impact + c.v2p * scale * tc;
+    phase = 'after';
+  }
+
+  return { x1, x2, bw1, bw2, phase, vmax, scale };
+}
+
+/* ── Render de un frame completo ── */
+function drawFrameAtT(t) {
+  var pos = getPositions(t);
+  if (!pos) return;
+  var c = g_c1;
+
+  var canvas = document.getElementById('canvas-col1d');
+  var ctx = canvas.getContext('2d');
+  ctx.clearRect(0, 0, CW, CH);
+
+  /* Fondo */
+  ctx.fillStyle = '#eef2f7';
+  ctx.fillRect(0, 0, CW, CH);
+
+  /* Línea punteada de impacto */
+  ctx.save();
+  ctx.strokeStyle = '#cbd5e1'; ctx.lineWidth = 1.5; ctx.setLineDash([5, 5]);
+  ctx.beginPath(); ctx.moveTo(IMPACT_X, 20); ctx.lineTo(IMPACT_X, FLOOR_Y); ctx.stroke();
+  ctx.restore();
+  ctx.fillStyle = '#94a3b8'; ctx.font = '10px Inter,sans-serif'; ctx.textAlign = 'center';
+  ctx.fillText('impacto', IMPACT_X, 16);
+
+  /* Suelo */
+  drawFloor(ctx);
+
+  /* Flash en fase de impacto */
+  if (pos.phase === 'impact') {
+    var tb = animState.simT - DUR_A;
+    var alpha = 0.7 * (1 - tb / DUR_B);
+    var grad = ctx.createRadialGradient(IMPACT_X, FLOOR_Y - BH/2, 0, IMPACT_X, FLOOR_Y - BH/2, 110);
+    grad.addColorStop(0, 'rgba(253,224,71,' + alpha + ')');
+    grad.addColorStop(0.5, 'rgba(251,146,60,' + (alpha*0.5) + ')');
+    grad.addColorStop(1, 'rgba(251,146,60,0)');
+    ctx.fillStyle = grad;
+    ctx.fillRect(IMPACT_X - 110, FLOOR_Y - BH - 30, 220, BH + 40);
+
+    /* Chispa */
+    ctx.save();
+    ctx.strokeStyle = '#f59e0b'; ctx.lineWidth = 2;
+    var spikes = 8;
+    for (var i = 0; i < spikes; i++) {
+      var ang = (i / spikes) * Math.PI * 2;
+      var r1 = 12 + 6 * Math.sin(i * 3);
+      var r2 = 22 + 10 * Math.cos(i * 2);
+      ctx.beginPath();
+      ctx.moveTo(IMPACT_X + r1*Math.cos(ang), FLOOR_Y - BH/2 + r1*Math.sin(ang));
+      ctx.lineTo(IMPACT_X + r2*Math.cos(ang), FLOOR_Y - BH/2 + r2*Math.sin(ang));
+      ctx.stroke();
+    }
+    ctx.restore();
+    setPhaseTag('impact');
+  } else if (pos.phase === 'before') {
+    setPhaseTag('before');
+  } else {
+    setPhaseTag('after');
+  }
+
+  /* Bloques */
+  var crush = (pos.phase === 'impact') ? 0.1 : 0;
+  drawBlock(ctx, pos.x1, FLOOR_Y, pos.bw1, BH, '#2563eb', crush, 1);
+  drawBlock(ctx, pos.x2, FLOOR_Y, pos.bw2, BH, '#ea580c', crush, 2);
+
+  /* Etiquetas de masa sobre cada bloque */
+  ctx.fillStyle = '#fff'; ctx.font = '700 12px Inter,sans-serif'; ctx.textAlign = 'center';
+  ctx.fillText('m\u2081=' + c.m1 + ' kg', pos.x1, FLOOR_Y - BH - 8);
+  ctx.fillStyle = '#fff'; ctx.fillText('m\u2082=' + c.m2 + ' kg', pos.x2, FLOOR_Y - BH - 8);
+
+  /* Flechas de velocidad */
+  var scale = pos.scale;
+  var vmax  = pos.vmax;
+  var arrowLen = function(v) { return Math.max(-160, Math.min(160, v * scale)); };
+
+  if (pos.phase === 'before' || pos.phase === 'impact') {
+    var a1 = arrowLen(c.v1);
+    var a2 = arrowLen(c.v2);
+    if (Math.abs(a1) > 4) drawArrow(ctx, pos.x1, FLOOR_Y - BH - 22, pos.x1 + a1, FLOOR_Y - BH - 22, '#1d4ed8', 2.5);
+    if (Math.abs(a2) > 4) drawArrow(ctx, pos.x2, FLOOR_Y - BH - 22, pos.x2 + a2, FLOOR_Y - BH - 22, '#c2410c', 2.5);
+    drawVelLabel(ctx, pos.x1, FLOOR_Y - BH - 22, c.v1, 'v\u2081', '#1d4ed8', a1);
+    drawVelLabel(ctx, pos.x2, FLOOR_Y - BH - 22, c.v2, 'v\u2082', '#c2410c', a2);
+  } else {
+    var a1p = arrowLen(c.v1p);
+    var a2p = arrowLen(c.v2p);
+    if (Math.abs(a1p) > 4) drawArrow(ctx, pos.x1, FLOOR_Y - BH - 22, pos.x1 + a1p, FLOOR_Y - BH - 22, '#2563eb', 2.5);
+    if (Math.abs(a2p) > 4) drawArrow(ctx, pos.x2, FLOOR_Y - BH - 22, pos.x2 + a2p, FLOOR_Y - BH - 22, '#ea580c', 2.5);
+    drawVelLabel(ctx, pos.x1, FLOOR_Y - BH - 22, c.v1p, "v\u2081'", '#2563eb', a1p);
+    drawVelLabel(ctx, pos.x2, FLOOR_Y - BH - 22, c.v2p, "v\u2082'", '#ea580c', a2p);
+  }
+
+  /* Diagrama de barras (debajo del suelo) */
+  drawBarChart(ctx, c, pos.phase);
+}
+
+function drawStaticFrame() {
+  /* Frame de inicio: bloques en posición inicial visible */
+  if (!g_c1) {
+    var canvas = document.getElementById('canvas-col1d');
+    var ctx = canvas.getContext('2d');
+    ctx.clearRect(0, 0, CW, CH);
+    ctx.fillStyle = '#eef2f7'; ctx.fillRect(0, 0, CW, CH);
+    drawFloor(ctx);
+    ctx.fillStyle = '#94a3b8'; ctx.font = '600 15px Inter,sans-serif'; ctx.textAlign = 'center';
+    ctx.fillText('Configure los parámetros y presione Calcular', CW/2, CH/2 - 30);
+    return;
+  }
+  drawFrameAtT(0);  /* t=0 → inicio de la fase de aproximación */
+}
+
+function drawFloor(ctx) {
+  ctx.fillStyle = '#c8d3e0';
+  ctx.fillRect(0, FLOOR_Y, CW, 5);
+  ctx.strokeStyle = '#94a3b8'; ctx.lineWidth = 1;
+  for (var xi = 0; xi < CW; xi += 18) {
+    ctx.beginPath(); ctx.moveTo(xi, FLOOR_Y+5); ctx.lineTo(xi+9, FLOOR_Y+18); ctx.stroke();
+  }
+}
+
+function drawBlock(ctx, cx, floorY, bw, bh, color, crush, idx) {
+  /* crush ∈ [0,1] aplasta ligeramente el bloque en el impacto */
+  var w = bw * (1 + crush * 0.18);
+  var h = bh * (1 - crush * 0.12);
+  var r = 7;
+  ctx.save();
+  ctx.fillStyle = color;
+  ctx.beginPath();
+  ctx.moveTo(cx - w/2 + r, floorY - h);
+  ctx.lineTo(cx + w/2 - r, floorY - h);
+  ctx.quadraticCurveTo(cx + w/2, floorY - h, cx + w/2, floorY - h + r);
+  ctx.lineTo(cx + w/2, floorY - r);
+  ctx.quadraticCurveTo(cx + w/2, floorY, cx + w/2 - r, floorY);
+  ctx.lineTo(cx - w/2 + r, floorY);
+  ctx.quadraticCurveTo(cx - w/2, floorY, cx - w/2, floorY - r);
+  ctx.lineTo(cx - w/2, floorY - h + r);
+  ctx.quadraticCurveTo(cx - w/2, floorY - h, cx - w/2 + r, floorY - h);
+  ctx.closePath();
+  ctx.fill();
+  /* Highlight */
+  ctx.fillStyle = 'rgba(255,255,255,0.18)';
+  ctx.fillRect(cx - w/2 + 5, floorY - h + 5, w/2 - 8, h/3);
+  /* Número del bloque */
+  ctx.fillStyle = 'rgba(255,255,255,0.9)';
+  ctx.font = '800 ' + Math.round(bh * 0.42) + 'px Inter,sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText(idx, cx, floorY - h/2 + bh*0.14);
+  ctx.restore();
+}
+
+function drawVelLabel(ctx, cx, y, v, lbl, color, arrowPx) {
+  if (!isFinite(v)) return;
+  var sign = v >= 0 ? '+' : '';
+  var text = lbl + ' = ' + sign + v.toFixed(2) + ' m/s';
+  /* Posicionar la etiqueta en el extremo de la flecha o cerca */
+  var tx = cx + arrowPx + (arrowPx >= 0 ? 6 : -6);
+  ctx.save();
+  ctx.fillStyle = color;
+  ctx.font = '600 10px Inter,sans-serif';
+  ctx.textAlign = arrowPx >= 0 ? 'left' : 'right';
+  ctx.fillText(text, tx, y - 5);
+  ctx.restore();
+}
+
+function drawBarChart(ctx, c, phase) {
+  /* Zona de barras en la franja inferior del canvas */
+  var barZoneY = FLOOR_Y + 22;
+  var barH     = CH - barZoneY - 6;
+  if (barH < 10) return;
+
+  /* Título */
+  ctx.fillStyle = '#64748b'; ctx.font = '700 10px Inter,sans-serif'; ctx.textAlign = 'left';
+  ctx.fillText('MOMENTUM (N·s)', 16, barZoneY + 12);
+  ctx.fillText('ENERGÍA CINÉTICA (J)', 320, barZoneY + 12);
+
+  var baseY  = CH - 8;
+  var maxBH  = barH - 18;
+  var showAfter = (phase === 'after');
+
+  /* ── Momentum ── */
+  var mItems = [
+    { lbl: 'p₁',   before: c.p1b, after: c.p1a, color: '#2563eb' },
+    { lbl: 'p₂',   before: c.p2b, after: c.p2a, color: '#ea580c' },
+    { lbl: 'p tot',before: c.ptb, after: c.pta, color: '#65a30d' }
+  ];
+  var mMax = 0.01;
+  mItems.forEach(function(it) { mMax = Math.max(mMax, Math.abs(it.before), Math.abs(it.after)); });
+  var mScale = maxBH / mMax;
+
+  mItems.forEach(function(it, i) {
+    var x = 16 + i * 88;
+    /* Antes (siempre visible, semitransparente si ya pasó) */
+    var alpha = showAfter ? '66' : 'cc';
+    ctx.fillStyle = it.color + alpha;
+    var hb = Math.abs(it.before) * mScale;
+    ctx.fillRect(x, baseY - (it.before >= 0 ? hb : 0), 18, it.before >= 0 ? hb : -hb);
+    ctx.strokeStyle = it.color; ctx.lineWidth = 1;
+    ctx.strokeRect(x, baseY - (it.before >= 0 ? hb : 0), 18, it.before >= 0 ? hb : -hb);
+    /* Después (solo si fase after) */
+    if (showAfter) {
+      ctx.fillStyle = it.color;
+      var ha = Math.abs(it.after) * mScale;
+      ctx.fillRect(x + 22, baseY - (it.after >= 0 ? ha : 0), 18, it.after >= 0 ? ha : -ha);
+      ctx.strokeStyle = it.color;
+      ctx.strokeRect(x + 22, baseY - (it.after >= 0 ? ha : 0), 18, it.after >= 0 ? ha : -ha);
+    }
+    /* Baseline + label */
+    ctx.strokeStyle = '#cbd5e1'; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(x-2, baseY); ctx.lineTo(x+44, baseY); ctx.stroke();
+    ctx.fillStyle = '#374151'; ctx.font = '9px Inter,sans-serif'; ctx.textAlign = 'center';
+    ctx.fillText(it.lbl, x + 19, baseY + 10);
+  });
+
+  /* ── Energía cinética ── */
+  var ke1b = 0.5*c.m1*c.v1*c.v1, ke1a = 0.5*c.m1*c.v1p*c.v1p;
+  var ke2b = 0.5*c.m2*c.v2*c.v2, ke2a = 0.5*c.m2*c.v2p*c.v2p;
+  var kItems = [
+    { lbl: 'KE₁', before: ke1b, after: ke1a, color: '#2563eb' },
+    { lbl: 'KE₂', before: ke2b, after: ke2a, color: '#ea580c' }
+  ];
+  var kMax = 0.01;
+  kItems.forEach(function(it) { kMax = Math.max(kMax, it.before, it.after); });
+  var kScale = maxBH / kMax;
+
+  kItems.forEach(function(it, i) {
+    var x = 320 + i * 88;
+    var alpha2 = showAfter ? '66' : 'cc';
+    ctx.fillStyle = it.color + alpha2;
+    var hb = it.before * kScale;
+    ctx.fillRect(x, baseY - hb, 18, hb);
+    ctx.strokeStyle = it.color; ctx.lineWidth = 1;
+    ctx.strokeRect(x, baseY - hb, 18, hb);
+    if (showAfter) {
+      ctx.fillStyle = it.color;
+      var ha = it.after * kScale;
+      ctx.fillRect(x + 22, baseY - ha, 18, ha);
+      ctx.strokeStyle = it.color;
+      ctx.strokeRect(x + 22, baseY - ha, 18, ha);
+    }
+    ctx.strokeStyle = '#cbd5e1'; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(x-2, baseY); ctx.lineTo(x+44, baseY); ctx.stroke();
+    ctx.fillStyle = '#374151'; ctx.font = '9px Inter,sans-serif'; ctx.textAlign = 'center';
+    ctx.fillText(it.lbl, x + 19, baseY + 10);
+  });
+
+  /* Leyenda antes/después */
+  if (showAfter) {
+    ctx.fillStyle = '#94a3b8'; ctx.fillRect(504, baseY - 10, 12, 10);
+    ctx.fillStyle = '#374151'; ctx.fillRect(520, baseY - 10, 12, 10);
+    ctx.fillStyle = '#64748b'; ctx.font = '9px Inter,sans-serif'; ctx.textAlign = 'left';
+    ctx.fillText('antes', 504, baseY + 10);
+    ctx.fillText('despues', 520, baseY + 10);
+  }
+}
+
+/* ── Init ── */
+window.addEventListener('load', function() {
+  syncE(0.6, 'num');
+  drawStaticFrame();
+  calcCol1D();
+});
+</script>
+</body>
+</html>

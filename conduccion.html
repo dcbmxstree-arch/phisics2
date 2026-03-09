@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Transferencia de Calor — Conducción | PHYSICS</title>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&family=Fira+Code&display=swap" rel="stylesheet">
+    <style>
+        :root { --primary: #ef4444; --blue: #3b82f6; --bg: #f8fafc; --dark: #0f172a; --border: #e2e8f0; }
+        body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--dark); margin: 0; padding: 20px; display: flex; flex-direction: column; align-items: center; }
+        .header { max-width: 900px; text-align: center; margin-bottom: 20px; }
+        .header h1 { font-weight: 900; margin: 0; font-size: 2rem; }
+        .header p { color: #64748b; font-size: 0.9rem; }
+        .main-container { display: flex; flex-direction: column; gap: 20px; width: 100%; max-width: 900px; }
+        .card { background: white; border-radius: 12px; border: 1px solid var(--border); padding: 20px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); }
+        canvas { display: block; margin: 0 auto; border-radius: 8px; max-width: 100%; background: #fff; }
+        .results-bar { display: grid; grid-template-columns: 1fr 1fr 1fr; background: var(--dark); color: white; padding: 20px; border-radius: 12px; margin-top: 15px; text-align: center; }
+        .res-item { display: flex; flex-direction: column; gap: 5px; border-right: 1px solid #334155; }
+        .res-item:last-child { border: none; }
+        .res-label { font-size: 0.7rem; color: #94a3b8; text-transform: uppercase; font-weight: 800; }
+        .res-val { font-family: 'Fira Code', monospace; font-size: 1.1rem; color: #fbbf24; }
+        .controls-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-top: 10px; }
+        .control-section { border: 1px solid var(--border); padding: 12px; border-radius: 8px; background: #fafafa; }
+        .control-section h4 { margin: 0 0 10px 0; font-size: 0.8rem; text-transform: uppercase; color: #64748b; border-bottom: 1px solid var(--border); padding-bottom: 5px; }
+        .input-group { display: flex; flex-direction: column; gap: 4px; margin-bottom: 10px; }
+        label { font-size: 0.75rem; font-weight: 700; }
+        input[type="range"] { width: 100%; accent-color: var(--primary); cursor: pointer; }
+        .val-display { font-family: 'Fira Code', monospace; font-size: 0.8rem; color: var(--primary); font-weight: bold; }
+        .btn-reset { background: var(--dark); color: white; border: none; padding: 12px 24px; border-radius: 8px; font-weight: 700; cursor: pointer; transition: 0.2s; align-self: center; margin-top: 10px; }
+    </style>
+  <meta name="description" content="Analizador de conducción de calor en serie. Gradiente térmico, resistencias y perfil de temperatura T(x).">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚙️</text></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="style.css">
+</head>
+  <nav class="nav-physics" role="navigation" aria-label="Navegación principal">
+    <div class="container nav-inner">
+      <a href="index.html" class="nav-logo">PHYSICS<span>.</span></a>
+      <button class="nav-toggle" id="navToggle" aria-expanded="false" aria-controls="navLinks" aria-label="Abrir menú">
+        <span></span><span></span><span></span>
+      </button>
+      <ul class="nav-links" id="navLinks" role="list">
+        <li><a href="index.html">Inicio</a></li>
+        <li><a href="index.html#cursos" class="nav-active">Asignaturas</a></li>
+        <li><a href="calculadora.html">Calculadora</a></li>
+        <li><a href="index.html#contacto">Contacto</a></li>
+      </ul>
+      <a href="https://wa.me/593995324419" target="_blank" class="btn btn-primary btn-sm nav-cta" rel="noopener">Reservar clase</a>
+    </div>
+  </nav>TYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Transferencia de Calor — Conducción | PHYSICS</title>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&family=Fira+Code&display=swap" rel="stylesheet">
+    <style>
+        :root { --primary: #ef4444; --blue: #3b82f6; --bg: #f8fafc; --dark: #0f172a; --border: #e2e8f0; }
+        body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--dark); margin: 0; padding: 20px; display: flex; flex-direction: column; align-items: center; }
+        .header { max-width: 900px; text-align: center; margin-bottom: 20px; }
+        .header h1 { font-weight: 900; margin: 0; font-size: 2rem; }
+        .header p { color: #64748b; font-size: 0.9rem; }
+        .main-container { display: flex; flex-direction: column; gap: 20px; width: 100%; max-width: 900px; }
+        .card { background: white; border-radius: 12px; border: 1px solid var(--border); padding: 20px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); }
+        canvas { display: block; margin: 0 auto; border-radius: 8px; max-width: 100%; background: #fff; }
+        .results-bar { display: grid; grid-template-columns: 1fr 1fr 1fr; background: var(--dark); color: white; padding: 20px; border-radius: 12px; margin-top: 15px; text-align: center; }
+        .res-item { display: flex; flex-direction: column; gap: 5px; border-right: 1px solid #334155; }
+        .res-item:last-child { border: none; }
+        .res-label { font-size: 0.7rem; color: #94a3b8; text-transform: uppercase; font-weight: 800; }
+        .res-val { font-family: 'Fira Code', monospace; font-size: 1.1rem; color: #fbbf24; }
+        .controls-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-top: 10px; }
+        .control-section { border: 1px solid var(--border); padding: 12px; border-radius: 8px; background: #fafafa; }
+        .control-section h4 { margin: 0 0 10px 0; font-size: 0.8rem; text-transform: uppercase; color: #64748b; border-bottom: 1px solid var(--border); padding-bottom: 5px; }
+        .input-group { display: flex; flex-direction: column; gap: 4px; margin-bottom: 10px; }
+        label { font-size: 0.75rem; font-weight: 700; }
+        input[type="range"] { width: 100%; accent-color: var(--primary); cursor: pointer; }
+        .val-display { font-family: 'Fira Code', monospace; font-size: 0.8rem; color: var(--primary); font-weight: bold; }
+        .btn-reset { background: var(--dark); color: white; border: none; padding: 12px 24px; border-radius: 8px; font-weight: 700; cursor: pointer; transition: 0.2s; align-self: center; margin-top: 10px; }
+    </style>
+  <meta name="description" content="Analizador de conducción de calor en serie. Gradiente térmico, resistencias y perfil de temperatura T(x).">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚙️</text></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <div class="header">
+        <h1>PHYSICS <span style="color: var(--primary);">THERMAL ANALYZER</span></h1>
+        <p>Análisis de conducción de calor en estado estable. Observa el flujo \( q \) y las temperaturas de interfaz.</p>
+    </div>
+
+    <div class="main-container">
+        <div class="card">
+            <canvas id="gradCanvas" width="800" height="250"></canvas>
+            <div class="results-bar">
+                <div class="res-item"><span class="res-label">Flujo de Calor</span><span class="res-val">\( q = \) <span id="resQ">--</span> \( \text{W/m}^2 \)</span></div>
+                <div class="res-item"><span class="res-label">T Interfaz 1</span><span class="res-val">\( T_1 = \) <span id="resT1">--</span> °C</span></div>
+                <div class="res-item"><span class="res-label">T Interfaz 2</span><span class="res-val">\( T_2 = \) <span id="resT2">--</span> °C</span></div>
+            </div>
+        </div>
+
+        <div class="card">
+            <h4 style="margin: 0 0 10px 0; font-size: 0.8rem; color: #64748b;">PERFIL DE TEMPERATURA \( T(x) \)</h4>
+            <canvas id="plotCanvas" width="800" height="150"></canvas>
+        </div>
+
+        <div class="card">
+            <div class="controls-grid">
+                <div class="control-section">
+                    <h4>Temperaturas Externas</h4>
+                    <div class="input-group"><label>T Izquierda (\( T_L \)): <span class="val-display" id="vTL">100</span>°C</label><input type="range" id="tLeft" min="0" max="100" value="100" oninput="calculate()"></div>
+                    <div class="input-group"><label>T Derecha (\( T_R \)): <span class="val-display" id="vTR">20</span>°C</label><input type="range" id="tRight" min="0" max="100" value="20" oninput="calculate()"></div>
+                </div>
+                <div class="control-section"><h4>Pared 1</h4>
+                    <div class="input-group"><label>k₁: <span id="vk1" class="val-display">1.0</span></label><input type="range" id="k1" min="0.1" max="10" step="0.1" value="1" oninput="calculate()"></div>
+                    <div class="input-group"><label>L₁: <span id="vl1" class="val-display">1.0</span></label><input type="range" id="l1" min="0.1" max="5" step="0.1" value="1" oninput="calculate()"></div>
+                </div>
+                <div class="control-section"><h4>Pared 2</h4>
+                    <div class="input-group"><label>k₂: <span id="vk2" class="val-display">2.0</span></label><input type="range" id="k2" min="0.1" max="10" step="0.1" value="2" oninput="calculate()"></div>
+                    <div class="input-group"><label>L₂: <span id="vl2" class="val-display">1.0</span></label><input type="range" id="l2" min="0.1" max="5" step="0.1" value="1" oninput="calculate()"></div>
+                </div>
+                <div class="control-section"><h4>Pared 3</h4>
+                    <div class="input-group"><label>k₃: <span id="vk3" class="val-display">1.0</span></label><input type="range" id="k3" min="0.1" max="10" step="0.1" value="1" oninput="calculate()"></div>
+                    <div class="input-group"><label>L₃: <span id="vl3" class="val-display">1.0</span></label><input type="range" id="l3" min="0.1" max="5" step="0.1" value="1" oninput="calculate()"></div>
+                </div>
+            </div>
+            <center><button class="btn-reset" onclick="resetDefaults()">RESTABLECER VALORES</button></center>
+        </div>
+    </div>
+
+<script>
+    const gradCanvas = document.getElementById('gradCanvas');
+    const plotCanvas = document.getElementById('plotCanvas');
+    const gCtx = gradCanvas.getContext('2d');
+    const pCtx = plotCanvas.getContext('2d');
+
+    function getTempColor(temp, minT, maxT) {
+        const ratio = (temp - minT) / (maxT - minT || 1);
+        const r = Math.floor(255 * ratio);
+        const b = Math.floor(255 * (1 - ratio));
+        return `rgb(${r}, 50, ${b})`;
+    }
+
+    function calculate() {
+        const TL = parseFloat(document.getElementById('tLeft').value);
+        const TR = parseFloat(document.getElementById('tRight').value);
+        const k1 = parseFloat(document.getElementById('k1').value);
+        const l1 = parseFloat(document.getElementById('l1').value);
+        const k2 = parseFloat(document.getElementById('k2').value);
+        const l2 = parseFloat(document.getElementById('l2').value);
+        const k3 = parseFloat(document.getElementById('k3').value);
+        const l3 = parseFloat(document.getElementById('l3').value);
+
+        // Actualizar etiquetas
+        document.getElementById('vTL').innerText = TL; document.getElementById('vTR').innerText = TR;
+        document.getElementById('vk1').innerText = k1; document.getElementById('vl1').innerText = l1;
+        document.getElementById('vk2').innerText = k2; document.getElementById('vl2').innerText = l2;
+        document.getElementById('vk3').innerText = k3; document.getElementById('vl3').innerText = l3;
+
+        const R1 = l1 / k1; const R2 = l2 / k2; const R3 = l3 / k3;
+        const Rtot = R1 + R2 + R3;
+        const q = (TL - TR) / Rtot;
+        const T1 = TL - q * R1;
+        const T2 = T1 - q * R2;
+
+        document.getElementById('resQ').innerText = q.toFixed(2);
+        document.getElementById('resT1').innerText = T1.toFixed(2);
+        document.getElementById('resT2').innerText = T2.toFixed(2);
+
+        if (window.MathJax) MathJax.typesetPromise();
+
+        drawGradients(TL, T1, T2, TR);
+        drawPlot(TL, T1, T2, TR, l1, l2, l3);
+    }
+
+    function drawGradients(TL, T1, T2, TR) {
+        gCtx.clearRect(0, 0, gradCanvas.width, gradCanvas.height);
+        const pad = 100, wallW = 200, h = 150, y = 40;
+        const temps = [TL, T1, T2, TR];
+        const minT = Math.min(TL, TR), maxT = Math.max(TL, TR);
+
+        for (let i = 0; i < 3; i++) {
+            const x = pad + (i * wallW);
+            const grad = gCtx.createLinearGradient(x, 0, x + wallW, 0);
+            grad.addColorStop(0, getTempColor(temps[i], minT, maxT));
+            grad.addColorStop(1, getTempColor(temps[i+1], minT, maxT));
+            gCtx.fillStyle = grad;
+            gCtx.fillRect(x, y, wallW, h);
+            gCtx.strokeStyle = "#0f172a";
+            gCtx.strokeRect(x, y, wallW, h);
+            gCtx.fillStyle = "#64748b";
+            gCtx.font = "bold 12px Inter";
+            gCtx.fillText(`PARED ${i+1}`, x + 70, y - 10);
+            gCtx.fillStyle = "#1e293b";
+            gCtx.fillText(`${temps[i].toFixed(1)}°C`, x - 25, y + h + 25);
+        }
+        gCtx.fillText(`${TR.toFixed(1)}°C`, pad + 600 - 25, y + h + 25);
+    }
+
+    function drawPlot(TL, T1, T2, TR, l1, l2, l3) {
+        pCtx.clearRect(0, 0, plotCanvas.width, plotCanvas.height);
+        const margin = 50, w = 700, h = 100, Ltot = l1 + l2 + l3;
+        const maxT = Math.max(TL, TR) * 1.1;
+        const points = [{x: 0, t: TL}, {x: l1, t: T1}, {x: l1+l2, t: T2}, {x: Ltot, t: TR}];
+        const mapX = (xv) => margin + (xv / Ltot) * w;
+        const mapY = (tv) => (margin + h) - (tv / maxT) * h;
+
+        pCtx.strokeStyle = "#e2e8f0"; pCtx.beginPath();
+        pCtx.moveTo(margin, 20); pCtx.lineTo(margin, margin+h); pCtx.lineTo(margin+w, margin+h); pCtx.stroke();
+
+        pCtx.strokeStyle = "#ef4444"; pCtx.lineWidth = 3; pCtx.beginPath();
+        pCtx.moveTo(mapX(points[0].x), mapY(points[0].t));
+        points.forEach(p => {
+            const px = mapX(p.x), py = mapY(p.t);
+            pCtx.lineTo(px, py);
+            pCtx.fillStyle = "#ef4444"; pCtx.beginPath(); pCtx.arc(px, py, 5, 0, Math.PI*2); pCtx.fill();
+        });
+        pCtx.stroke();
+    }
+
+    function resetDefaults() {
+        document.getElementById('tLeft').value = 100; document.getElementById('tRight').value = 20;
+        document.getElementById('k1').value = 1; document.getElementById('l1').value = 1;
+        document.getElementById('k2').value = 2; document.getElementById('l2').value = 2;
+        document.getElementById('k3').value = 1; document.getElementById('l3').value = 1;
+        calculate();
+    }
+
+    window.onload = calculate;
+</script>
+<footer class="footer-mini"><a href="index.html">← Volver a PHYSICS</a> &nbsp;·&nbsp; © 2026 PHYSICS — Quito, Ecuador</footer>
+<script>
+document.getElementById("navToggle").addEventListener("click",()=>{
+  const nl=document.getElementById("navLinks");
+  const open=nl.classList.toggle("open");
+  document.getElementById("navToggle").setAttribute("aria-expanded",open);
+});
+</script>
+</body>
+</html>

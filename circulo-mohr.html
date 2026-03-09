@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Círculo de Mohr 2D/3D | PHYSICS</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #2563EB;
+            --dark: #0F172A;
+            --accent: #F59E0B;
+            --bg: #F8FAFC;
+            --card: #FFFFFF;
+            --text: #334155;
+        }
+
+        body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 20px; line-height: 1.6; }
+        .container { max-width: 1100px; margin: 0 auto; }
+        
+        header { text-align: center; margin-bottom: 30px; }
+        h1 { font-weight: 800; color: var(--dark); margin: 0; }
+        .back-link { color: var(--primary); text-decoration: none; font-weight: 600; font-size: 0.9rem; }
+
+        /* Tabs */
+        .tabs { display: flex; gap: 10px; margin-bottom: 20px; border-bottom: 2px solid #E2E8F0; }
+        .tab-btn { padding: 10px 20px; border: none; background: none; cursor: pointer; font-weight: 600; color: var(--text); border-bottom: 3px solid transparent; transition: 0.3s; }
+        .tab-btn.active { color: var(--primary); border-bottom-color: var(--primary); }
+
+        .main-grid { display: grid; grid-template-columns: 350px 1fr; gap: 25px; }
+        .card { background: var(--card); padding: 20px; border-radius: 12px; border: 1px solid #E2E8F0; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); }
+
+        .input-group { margin-bottom: 15px; }
+        label { display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 5px; }
+        input { width: 100%; padding: 8px; border: 1px solid #CBD5E1; border-radius: 6px; font-size: 1rem; box-sizing: border-box; }
+
+        .results { margin-top: 20px; padding-top: 15px; border-top: 1px dashed #CBD5E1; }
+        .res-item { display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 0.9rem; }
+        .res-val { font-weight: 700; color: var(--primary); }
+
+        canvas { background: #fff; width: 100%; border-radius: 8px; border: 1px solid #E2E8F0; cursor: crosshair; }
+
+        .theory { margin-top: 30px; }
+        .theory-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        code { background: #F1F5F9; padding: 2px 4px; border-radius: 4px; font-weight: 600; }
+
+        @media (max-width: 850px) { .main-grid, .theory-grid { grid-template-columns: 1fr; } }
+    </style>
+  <meta name="description" content="Analizador interactivo del Círculo de Mohr para estados plano y triaxial. Esfuerzos principales y cortante máximo.">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚙️</text></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="style.css">
+</head>
+  <nav class="nav-physics" role="navigation" aria-label="Navegación principal">
+    <div class="container nav-inner">
+      <a href="index.html" class="nav-logo">PHYSICS<span>.</span></a>
+      <button class="nav-toggle" id="navToggle" aria-expanded="false" aria-controls="navLinks" aria-label="Abrir menú">
+        <span></span><span></span><span></span>
+      </button>
+      <ul class="nav-links" id="navLinks" role="list">
+        <li><a href="index.html">Inicio</a></li>
+        <li><a href="index.html#cursos" class="nav-active">Asignaturas</a></li>
+        <li><a href="calculadora.html">Calculadora</a></li>
+        <li><a href="index.html#contacto">Contacto</a></li>
+      </ul>
+      <a href="https://wa.me/593995324419" target="_blank" class="btn btn-primary btn-sm nav-cta" rel="noopener">Reservar clase</a>
+    </div>
+  </nav>TYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Círculo de Mohr 2D/3D | PHYSICS</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #2563EB;
+            --dark: #0F172A;
+            --accent: #F59E0B;
+            --bg: #F8FAFC;
+            --card: #FFFFFF;
+            --text: #334155;
+        }
+
+        body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 20px; line-height: 1.6; }
+        .container { max-width: 1100px; margin: 0 auto; }
+        
+        header { text-align: center; margin-bottom: 30px; }
+        h1 { font-weight: 800; color: var(--dark); margin: 0; }
+        .back-link { color: var(--primary); text-decoration: none; font-weight: 600; font-size: 0.9rem; }
+
+        /* Tabs */
+        .tabs { display: flex; gap: 10px; margin-bottom: 20px; border-bottom: 2px solid #E2E8F0; }
+        .tab-btn { padding: 10px 20px; border: none; background: none; cursor: pointer; font-weight: 600; color: var(--text); border-bottom: 3px solid transparent; transition: 0.3s; }
+        .tab-btn.active { color: var(--primary); border-bottom-color: var(--primary); }
+
+        .main-grid { display: grid; grid-template-columns: 350px 1fr; gap: 25px; }
+        .card { background: var(--card); padding: 20px; border-radius: 12px; border: 1px solid #E2E8F0; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); }
+
+        .input-group { margin-bottom: 15px; }
+        label { display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 5px; }
+        input { width: 100%; padding: 8px; border: 1px solid #CBD5E1; border-radius: 6px; font-size: 1rem; box-sizing: border-box; }
+
+        .results { margin-top: 20px; padding-top: 15px; border-top: 1px dashed #CBD5E1; }
+        .res-item { display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 0.9rem; }
+        .res-val { font-weight: 700; color: var(--primary); }
+
+        canvas { background: #fff; width: 100%; border-radius: 8px; border: 1px solid #E2E8F0; cursor: crosshair; }
+
+        .theory { margin-top: 30px; }
+        .theory-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        code { background: #F1F5F9; padding: 2px 4px; border-radius: 4px; font-weight: 600; }
+
+        @media (max-width: 850px) { .main-grid, .theory-grid { grid-template-columns: 1fr; } }
+    </style>
+  <meta name="description" content="Analizador interactivo del Círculo de Mohr para estados plano y triaxial. Esfuerzos principales y cortante máximo.">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚙️</text></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="container">
+    <header>
+        <a href="index.html" class="back-link">← Volver a PHYSICS</a>
+        <h1>Analizador del Círculo de Mohr</h1>
+    </header>
+
+    <div class="tabs">
+        <button class="tab-btn active" onclick="switchTab('2d')">Estado 2D (Plano)</button>
+        <button class="tab-btn" onclick="switchTab('3d')">Estado 3D (Triaxial)</button>
+    </div>
+
+    <div class="main-grid">
+        <aside class="card">
+            <div id="inputs-2d">
+                <h3>Entradas 2D</h3>
+                <div class="input-group">
+                    <label>σx (Esfuerzo Normal X)</label>
+                    <input type="number" id="sx" value="50" oninput="update()">
+                </div>
+                <div class="input-group">
+                    <label>σy (Esfuerzo Normal Y)</label>
+                    <input type="number" id="sy" value="20" oninput="update()">
+                </div>
+                <div class="input-group">
+                    <label>τxy (Esfuerzo Cortante)</label>
+                    <input type="number" id="txy" value="30" oninput="update()">
+                </div>
+            </div>
+
+            <div id="inputs-3d" style="display:none">
+                <h3>Esfuerzos Principales</h3>
+                <div class="input-group">
+                    <label>σ₁ (Mayor)</label>
+                    <input type="number" id="s1" value="80" oninput="update()">
+                </div>
+                <div class="input-group">
+                    <label>σ₂ (Intermedio)</label>
+                    <input type="number" id="s2" value="40" oninput="update()">
+                </div>
+                <div class="input-group">
+                    <label>σ₃ (Menor)</label>
+                    <input type="number" id="s3" value="10" oninput="update()">
+                </div>
+            </div>
+
+            <div class="results" id="res-output">
+                </div>
+        </aside>
+
+        <section class="card">
+            <canvas id="mohrCanvas" width="800" height="600"></canvas>
+        </section>
+    </div>
+
+    <div class="card theory">
+        <h3>Fundamentos Teóricos</h3>
+        <div class="theory-grid">
+            <div>
+                <h4>Análisis 2D</h4>
+                <p>Representa el estado de esfuerzos en cualquier plano inclinado. El centro (C) y radio (R) se definen como:</p>
+                <ul>
+                    <li><code>C = (σx + σy) / 2</code></li>
+                    <li><code>R = √[((σx - σy)/2)² + τxy²]</code></li>
+                </ul>
+                <p><small>*Convención: τxy positivo si genera rotación horaria en el elemento.</small></p>
+            </div>
+            <div>
+                <h4>Análisis 3D</h4>
+                <p>Se construye a partir de los esfuerzos principales (donde el cortante es cero). El cortante máximo absoluto es el radio del círculo más grande.</p>
+                <ul>
+                    <li><code>τmax_abs = (σ₁ - σ₃) / 2</code></li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    let currentMode = '2d';
+    const canvas = document.getElementById('mohrCanvas');
+    const ctx = canvas.getContext('2d');
+
+    function switchTab(mode) {
+        currentMode = mode;
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        event.target.classList.add('active');
+        document.getElementById('inputs-2d').style.display = mode === '2d' ? 'block' : 'none';
+        document.getElementById('inputs-3d').style.display = mode === '3d' ? 'block' : 'none';
+        update();
+    }
+
+    function update() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        if (currentMode === '2d') calc2D();
+        else calc3D();
+    }
+
+    function calc2D() {
+        const sx = parseFloat(document.getElementById('sx').value) || 0;
+        const sy = parseFloat(document.getElementById('sy').value) || 0;
+        const txy = parseFloat(document.getElementById('txy').value) || 0;
+
+        const C = (sx + sy) / 2;
+        const R = Math.sqrt(Math.pow((sx - sy) / 2, 2) + Math.pow(txy, 2));
+        const s1 = C + R;
+        const s2 = C - R;
+        const thetaP = 0.5 * Math.atan2(2 * txy, (sx - sy)) * (180 / Math.PI);
+
+        const out = document.getElementById('res-output');
+        out.innerHTML = `
+            <div class="res-item"><span>Centro (C):</span><span class="res-val">${C.toFixed(2)}</span></div>
+            <div class="res-item"><span>Radio (R):</span><span class="res-val">${R.toFixed(2)}</span></div>
+            <div class="res-item"><span>σ₁ (Max):</span><span class="res-val">${s1.toFixed(2)}</span></div>
+            <div class="res-item"><span>σ₂ (Min):</span><span class="res-val">${s2.toFixed(2)}</span></div>
+            <div class="res-item"><span>τ_max:</span><span class="res-val">${R.toFixed(2)}</span></div>
+            <div class="res-item"><span>θp:</span><span class="res-val">${thetaP.toFixed(2)}°</span></div>
+        `;
+
+        drawMohr([{c: C, r: R}], [s1, s2], [{x: sx, y: txy, label: 'P(σx, τxy)'}, {x: sy, y: -txy, label: "P'(σy, -τxy)"}]);
+    }
+
+    function calc3D() {
+        let s = [
+            parseFloat(document.getElementById('s1').value) || 0,
+            parseFloat(document.getElementById('s2').value) || 0,
+            parseFloat(document.getElementById('s3').value) || 0
+        ].sort((a, b) => b - a);
+
+        const c1 = (s[0] + s[1]) / 2; const r1 = (s[0] - s[1]) / 2;
+        const c2 = (s[0] + s[2]) / 2; const r2 = (s[0] - s[2]) / 2;
+        const c3 = (s[1] + s[2]) / 2; const r3 = (s[1] - s[2]) / 2;
+
+        document.getElementById('res-output').innerHTML = `
+            <div class="res-item"><span>σ₁:</span><span class="res-val">${s[0].toFixed(2)}</span></div>
+            <div class="res-item"><span>σ₂:</span><span class="res-val">${s[1].toFixed(2)}</span></div>
+            <div class="res-item"><span>σ₃:</span><span class="res-val">${s[2].toFixed(2)}</span></div>
+            <div class="res-item"><span>τ_max_abs:</span><span class="res-val">${r2.toFixed(2)}</span></div>
+        `;
+
+        drawMohr([
+            {c: c1, r: r1, color: '#3B82F6'}, 
+            {c: c2, r: r2, color: '#2563EB'}, 
+            {c: c3, r: r3, color: '#60A5FA'}
+        ], s, []);
+    }
+
+    function drawMohr(circles, principals, points) {
+        const padding = 60;
+        const w = canvas.width; const h = canvas.height;
+        
+        // Auto-escala
+        let allX = [...principals, ...circles.map(c => c.c + c.r), ...circles.map(c => c.c - c.r)];
+        if(points) allX.push(...points.map(p => p.x));
+        
+        const minX = Math.min(...allX, 0);
+        const maxX = Math.max(...allX, 0);
+        const maxR = Math.max(...circles.map(c => c.r));
+        
+        const rangeX = (maxX - minX) || 100;
+        const scale = (w - 2 * padding) / (rangeX * 1.2);
+        const offsetX = padding - minX * scale + (w - 2*padding - rangeX * scale)/2;
+        const centerY = h / 2;
+
+        // Cuadrícula y Ejes
+        ctx.strokeStyle = '#F1F5F9'; ctx.beginPath();
+        for(let i=0; i<w; i+=40) { ctx.moveTo(i,0); ctx.lineTo(i,h); }
+        for(let i=0; i<h; i+=40) { ctx.moveTo(0,i); ctx.lineTo(w,i); }
+        ctx.stroke();
+
+        ctx.strokeStyle = '#94A3B8'; ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.moveTo(0, centerY); ctx.lineTo(w, centerY); // Eje Sigma
+        ctx.moveTo(offsetX, 0); ctx.lineTo(offsetX, h); // Eje Tau
+        ctx.stroke();
+
+        // Etiquetas Ejes
+        ctx.fillStyle = '#64748B'; ctx.font = 'bold 12px Inter';
+        ctx.fillText('σ (Esfuerzo Normal)', w - 130, centerY - 10);
+        ctx.save(); ctx.translate(offsetX + 15, 30); ctx.rotate(Math.PI/2);
+        ctx.fillText('τ (Esfuerzo Cortante)', 0, 0); ctx.restore();
+
+        // Dibujar Círculos
+        circles.forEach(circ => {
+            ctx.beginPath();
+            ctx.strokeStyle = circ.color || varToHex('--primary');
+            ctx.lineWidth = 3;
+            ctx.arc(offsetX + circ.c * scale, centerY, circ.r * scale, 0, Math.PI * 2);
+            ctx.stroke();
+            // Centro
+            ctx.fillStyle = circ.color || varToHex('--primary');
+            ctx.beginPath(); ctx.arc(offsetX + circ.c * scale, centerY, 4, 0, 7); ctx.fill();
+        });
+
+        // Dibujar Puntos y Líneas (Solo 2D)
+        if(points.length > 0) {
+            ctx.setLineDash([5, 5]); ctx.strokeStyle = '#94A3B8';
+            ctx.beginPath();
+            ctx.moveTo(offsetX + points[0].x * scale, centerY - points[0].y * scale);
+            ctx.lineTo(offsetX + points[1].x * scale, centerY - points[1].y * scale);
+            ctx.stroke();
+            ctx.setLineDash([]);
+
+            points.forEach(p => {
+                ctx.fillStyle = varToHex('--accent');
+                ctx.beginPath(); ctx.arc(offsetX + p.x * scale, centerY - p.y * scale, 5, 0, 7); ctx.fill();
+                ctx.fillText(p.label, offsetX + p.x * scale + 8, centerY - p.y * scale - 8);
+            });
+        }
+
+        // Marcar Esfuerzos Principales
+        principals.forEach(p => {
+            ctx.fillStyle = '#EF4444';
+            ctx.beginPath(); ctx.arc(offsetX + p * scale, centerY, 5, 0, 7); ctx.fill();
+            ctx.fillText(p.toFixed(1), offsetX + p * scale - 10, centerY + 20);
+        });
+    }
+
+    function varToHex(v) { return getComputedStyle(document.documentElement).getPropertyValue(v).trim(); }
+
+    window.onload = update;
+</script>
+<footer class="footer-mini"><a href="index.html">← Volver a PHYSICS</a> &nbsp;·&nbsp; © 2026 PHYSICS — Quito, Ecuador</footer>
+<script>
+document.getElementById("navToggle").addEventListener("click",()=>{
+  const nl=document.getElementById("navLinks");
+  const open=nl.classList.toggle("open");
+  document.getElementById("navToggle").setAttribute("aria-expanded",open);
+});
+</script>
+</body>
+</html>

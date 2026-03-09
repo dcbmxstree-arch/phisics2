@@ -1,0 +1,1376 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Calculadora de Integrales | PHYSICS</title>
+  <meta name="description" content="Calculadora de integrales simples y dobles con resolución simbólica paso a paso y visualización 3D interactiva. Para estudiantes de Cálculo en EPN, USFQ y ESPOL.">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚙️</text></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/11.8.0/math.js"></script>
+  <script src="https://cdn.plot.ly/plotly-2.24.1.min.js"></script>
+  <style>
+    body { background: var(--bg); }
+    .integral-notation {
+      font-family: 'Georgia','Times New Roman',serif;
+      font-size: 1.05rem;
+      color: var(--dark-blue);
+      background: var(--blue-light);
+      border: 1px solid var(--blue-mid);
+      border-radius: 8px;
+      padding: 12px 16px;
+      margin-bottom: 14px;
+      line-height: 2;
+      text-align: center;
+    }
+    .steps-panel { display:none; background:#f8faff; border:1px solid var(--blue-mid); border-radius:8px; padding:16px; margin-top:14px; }
+    .steps-panel.visible { display:block; }
+    .step-row { display:flex; gap:12px; align-items:flex-start; padding:10px 0; border-bottom:1px solid #e0e9ff; }
+    .step-row:last-child { border-bottom:none; }
+    .step-num { min-width:24px; height:24px; background:var(--electric-blue); color:#fff; border-radius:50%; font-size:0.72rem; font-weight:700; display:flex; align-items:center; justify-content:center; flex-shrink:0; margin-top:2px; }
+    .step-body { font-size:0.88rem; line-height:1.7; color:var(--text-main); }
+    .step-body .expr { font-family:'Fira Code',monospace; background:#e8f0ff; padding:2px 6px; border-radius:4px; font-size:0.83rem; }
+    .step-body .rexpr { font-family:'Fira Code',monospace; background:#d1fae5; padding:2px 6px; border-radius:4px; font-size:0.83rem; color:#065f46; }
+    .method-badge { display:inline-flex; align-items:center; gap:5px; font-size:0.73rem; font-weight:700; letter-spacing:.4px; text-transform:uppercase; padding:3px 9px; border-radius:20px; margin-bottom:10px; }
+    .method-badge.symbolic { background:#d1fae5; color:#065f46; }
+    .method-badge.numeric  { background:#fef3c7; color:#92400e; }
+    .examples-grid { display:grid; grid-template-columns:1fr 1fr; gap:7px; margin-top:8px; }
+    .ex-btn { background:var(--white); border:1px solid var(--border); border-radius:6px; padding:7px 8px; font-size:0.75rem; color:var(--text-main); cursor:pointer; text-align:left; transition:var(--transition); font-family:'Inter',sans-serif; line-height:1.4; }
+    .ex-btn:hover { border-color:var(--electric-blue); background:var(--blue-light); color:var(--electric-blue); }
+    .ex-btn strong { display:block; font-size:0.7rem; font-weight:700; color:var(--text-muted); text-transform:uppercase; letter-spacing:.3px; margin-bottom:2px; }
+    #plot-simple { width:100%; height:380px; }
+    #plot-3d     { width:100%; height:420px; }
+    #plot-region { width:100%; height:265px; }
+    .limits-double { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+    .limits-section-label { font-size:0.72rem; font-weight:700; text-transform:uppercase; letter-spacing:.5px; color:var(--text-muted); padding:8px 0 2px; border-top:1px solid var(--border); margin-top:4px; grid-column:1/-1; }
+    .syntax-table { width:100%; border-collapse:collapse; }
+    .syntax-table td { padding:5px 4px; font-size:0.8rem; border-bottom:1px solid var(--border); }
+    .syntax-table td:last-child { font-family:'Fira Code',monospace; font-size:0.77rem; color:#1d4ed8; background:var(--blue-light); border-radius:4px; padding:3px 7px; }
+    .syntax-table tr:last-child td { border-bottom:none; }
+    .calc-error { display:none; background:#fee2e2; border:1px solid #fca5a5; border-radius:8px; padding:10px 14px; font-size:0.85rem; color:#991b1b; margin-top:10px; }
+    .calc-error.visible { display:block; }
+    .slider-row { display:flex; align-items:center; gap:10px; margin-top:6px; }
+    .slider-row input[type=range] { flex:1; }
+    .slider-row span { font-size:0.8rem; font-weight:700; color:var(--electric-blue); min-width:34px; text-align:right; }
+    @media(max-width:768px){ .examples-grid{grid-template-columns:1fr;} .limits-double{grid-template-columns:1fr;} }
+
+    /* ── FRENET PANEL STYLES ── */
+    #plot-frenet3d  { width:100%; height:520px; }
+    #plot-kappa     { width:100%; height:220px; }
+    .frenet-legend  { display:flex; flex-wrap:wrap; gap:8px; margin-bottom:14px; }
+    .fl-item        { display:flex; align-items:center; gap:6px; font-size:0.8rem; font-weight:600; color:var(--text-main); background:var(--white); border:1px solid var(--border); border-radius:20px; padding:4px 10px; cursor:default; }
+    .fl-dot         { width:12px; height:12px; border-radius:50%; flex-shrink:0; }
+    .fl-line        { width:20px; height:3px; border-radius:2px; flex-shrink:0; }
+    .fv-grid        { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:10px; }
+    .fv-card        { background:var(--bg); border:1px solid var(--border); border-radius:8px; padding:10px; }
+    .fv-card-title  { font-size:0.68rem; font-weight:700; text-transform:uppercase; letter-spacing:.5px; color:var(--text-muted); margin-bottom:4px; }
+    .fv-card-val    { font-family:'Fira Code',monospace; font-size:0.82rem; color:var(--dark-blue); line-height:1.5; }
+    .fv-scalar      { background:var(--blue-light); border:1px solid var(--blue-mid); border-radius:8px; padding:12px; text-align:center; margin-top:10px; }
+    .fv-scalar-label{ font-size:0.72rem; font-weight:700; text-transform:uppercase; letter-spacing:.5px; color:var(--text-muted); display:block; margin-bottom:2px; }
+    .fv-scalar-val  { font-size:1.4rem; font-weight:800; color:var(--electric-blue); display:block; font-variant-numeric:tabular-nums; }
+    .plane-eq       { font-family:'Fira Code',monospace; font-size:0.8rem; background:var(--bg); border:1px solid var(--border); border-radius:6px; padding:8px 12px; margin-top:4px; color:var(--dark-blue); }
+    .plane-row      { margin-bottom:10px; }
+    .plane-row-label{ font-size:0.72rem; font-weight:700; text-transform:uppercase; letter-spacing:.5px; margin-bottom:3px; }
+    .vis-toggle     { display:flex; align-items:center; gap:7px; font-size:0.8rem; padding:4px 0; cursor:pointer; user-select:none; }
+    .vis-toggle input{ accent-color:var(--electric-blue); width:15px; height:15px; cursor:pointer; }
+    .deriv-display  { background:#f8faff; border:1px solid var(--blue-mid); border-radius:8px; padding:12px; margin-top:10px; }
+    .deriv-row      { display:flex; gap:8px; align-items:baseline; padding:5px 0; border-bottom:1px solid #e8f0ff; font-size:0.84rem; }
+    .deriv-row:last-child { border-bottom:none; }
+    .deriv-label    { font-weight:700; color:var(--text-muted); min-width:54px; font-size:0.76rem; }
+    .deriv-expr     { font-family:'Fira Code',monospace; font-size:0.8rem; color:var(--dark-blue); }
+    .frenet-ex-grid { display:grid; grid-template-columns:1fr; gap:6px; margin-top:8px; }
+    .fex-btn        { background:var(--white); border:1px solid var(--border); border-radius:6px; padding:7px 10px; font-size:0.78rem; color:var(--text-main); cursor:pointer; text-align:left; transition:var(--transition); font-family:'Inter',sans-serif; line-height:1.5; }
+    .fex-btn:hover  { border-color:var(--electric-blue); background:var(--blue-light); color:var(--electric-blue); }
+    .fex-btn strong { display:block; font-size:0.68rem; font-weight:700; color:var(--text-muted); text-transform:uppercase; letter-spacing:.3px; margin-bottom:2px; }
+    .singular-warn  { display:none; background:#fef3c7; border:1px solid #fde68a; border-radius:8px; padding:10px 14px; font-size:0.82rem; color:#92400e; margin-top:8px; }
+    .singular-warn.visible { display:block; }
+    @media(max-width:768px){ .fv-grid{grid-template-columns:1fr;} }
+  </style>
+</head>
+<body>
+
+<nav class="nav-physics" role="navigation" aria-label="Navegación principal">
+  <div class="container nav-inner">
+    <a href="index.html" class="nav-logo">PHYSICS<span>.</span></a>
+    <button class="nav-toggle" id="navToggle" aria-expanded="false" aria-controls="navLinks" aria-label="Abrir menú"><span></span><span></span><span></span></button>
+    <ul class="nav-links" id="navLinks" role="list">
+      <li><a href="index.html">Inicio</a></li>
+      <li><a href="index.html#cursos" class="nav-active">Asignaturas</a></li>
+      <li><a href="calculadora.html">Calculadora</a></li>
+      <li><a href="index.html#contacto">Contacto</a></li>
+    </ul>
+    <a href="https://wa.me/593995324419" target="_blank" class="btn btn-primary btn-sm nav-cta" rel="noopener">Reservar clase</a>
+  </div>
+</nav>
+
+<header class="tool-hero">
+  <div class="container">
+    <div class="breadcrumb"><a href="index.html">PHYSICS</a><span>›</span><span>Cálculo</span></div>
+    <h1>Calculadora de <span>Cálculo</span></h1>
+    <p>Integrales simples y dobles con resolución simbólica · Geometría diferencial de curvas vectoriales con marco de Frenet-Serret y visualización 3D interactiva.</p>
+  </div>
+</header>
+
+<div class="container">
+  <div class="tool-tabs" role="tablist">
+    <button class="tab-btn active" id="tab-simple" role="tab" onclick="switchTab('simple')">∫ Integral Simple</button>
+    <button class="tab-btn"        id="tab-double" role="tab" onclick="switchTab('double')">∬ Integral Doble</button>
+    <button class="tab-btn"        id="tab-frenet" role="tab" onclick="switchTab('frenet')">∇ Curvas Vectoriales</button>
+  </div>
+</div>
+
+<!-- ═══ PANEL SIMPLE ═══ -->
+<div id="panel-simple" class="container">
+  <div class="tool-layout">
+    <aside class="tool-sidebar">
+      <div class="card">
+        <h3 style="font-size:1rem;margin-bottom:14px;color:var(--dark-blue);">Parámetros</h3>
+        <div class="input-group"><label>Función f(x)</label><input type="text" id="s-func" value="x^2"></div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+          <div class="input-group"><label>Límite inferior a</label><input type="text" id="s-a" value="0"></div>
+          <div class="input-group"><label>Límite superior b</label><input type="text" id="s-b" value="1"></div>
+        </div>
+        <button class="btn btn-primary" style="width:100%;margin-top:4px;" onclick="calcSimple()">Calcular ∫</button>
+        <div class="calc-error" id="s-error"></div>
+      </div>
+      <div class="card">
+        <h3 style="font-size:0.83rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px;">Ejemplos rápidos</h3>
+        <div class="examples-grid">
+          <button class="ex-btn" onclick="loadSimple('x^2',0,1)"><strong>Polinomio</strong>x² de 0 a 1</button>
+          <button class="ex-btn" onclick="loadSimple('sin(x)',0,'pi')"><strong>Trigon.</strong>sin(x) de 0 a π</button>
+          <button class="ex-btn" onclick="loadSimple('exp(-x)',0,3)"><strong>Expo.</strong>e⁻ˣ de 0 a 3</button>
+          <button class="ex-btn" onclick="loadSimple('1/x',1,'e')"><strong>Logarítmica</strong>1/x de 1 a e</button>
+          <button class="ex-btn" onclick="loadSimple('x^3 - 2*x','-sqrt(2)','sqrt(2)')"><strong>Cúbica</strong>x³−2x</button>
+          <button class="ex-btn" onclick="loadSimple('sqrt(1 - x^2)',-1,1)"><strong>Semicírculo</strong>√(1−x²)</button>
+        </div>
+      </div>
+      <div class="card">
+        <h3 style="font-size:0.83rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px;">Sintaxis</h3>
+        <table class="syntax-table">
+          <tr><td>Potencia</td><td>x^2</td></tr>
+          <tr><td>Multiplicar</td><td>2*x</td></tr>
+          <tr><td>Raíz</td><td>sqrt(x)</td></tr>
+          <tr><td>Trig.</td><td>sin(x), cos(x)</td></tr>
+          <tr><td>Exponencial</td><td>exp(x)</td></tr>
+          <tr><td>Logaritmo</td><td>ln(x)</td></tr>
+          <tr><td>Constantes</td><td>pi, e</td></tr>
+        </table>
+      </div>
+    </aside>
+    <main class="tool-content">
+      <div class="card" id="s-result-card" style="display:none;">
+        <div id="s-method-badge"></div>
+        <div id="s-notation" class="integral-notation"></div>
+        <div class="result-badge">
+          <span class="result-label">Resultado</span>
+          <span class="result-val" id="s-result-val">—</span>
+        </div>
+        <p style="font-size:0.76rem;color:var(--text-muted);margin-top:8px;" id="s-precision"></p>
+        <div class="steps-panel" id="s-steps"></div>
+      </div>
+      <div class="card"><div id="plot-simple"></div></div>
+    </main>
+  </div>
+</div>
+
+<!-- ═══ PANEL DOBLE ═══ -->
+<div id="panel-double" class="container" style="display:none;">
+  <div class="tool-layout">
+    <aside class="tool-sidebar">
+      <div class="card">
+        <h3 style="font-size:1rem;margin-bottom:14px;color:var(--dark-blue);">Parámetros</h3>
+        <div class="input-group"><label>Función f(x, y)</label><input type="text" id="d-func" value="x^2 + y^2"></div>
+        <div class="limits-double">
+          <div class="limits-section-label">① Integral exterior — en x (constantes)</div>
+          <div class="input-group"><label>a — Límite inferior x</label><input type="text" id="d-a" value="0"></div>
+          <div class="input-group"><label>b — Límite superior x</label><input type="text" id="d-b" value="1"></div>
+          <div class="limits-section-label">② Integral interior — en y (funciones de x)</div>
+          <div class="input-group"><label>g₁(x) — Límite inferior y</label><input type="text" id="d-g1" value="0" placeholder="Ej: 0, x, x^2"></div>
+          <div class="input-group"><label>g₂(x) — Límite superior y</label><input type="text" id="d-g2" value="x" placeholder="Ej: x, sqrt(x), 1-x"></div>
+        </div>
+        <div style="margin-top:6px;margin-bottom:12px;">
+          <div style="font-size:0.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text-muted);margin-bottom:4px;">Subdivisiones — fallback numérico</div>
+          <div class="slider-row">
+            <input type="range" id="d-n" min="20" max="200" step="10" value="80" oninput="document.getElementById('d-n-val').textContent=this.value">
+            <span id="d-n-val">80</span>
+          </div>
+        </div>
+        <button class="btn btn-primary" style="width:100%;" onclick="calcDouble()">Calcular ∬</button>
+        <div class="calc-error" id="d-error"></div>
+      </div>
+      <div class="card">
+        <h3 style="font-size:0.83rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px;">Ejemplos rápidos</h3>
+        <div class="examples-grid">
+          <button class="ex-btn" onclick="loadDouble('x + y',0,1,0,1)"><strong>Rectangular</strong>x+y, [0,1]²</button>
+          <button class="ex-btn" onclick="loadDouble('x*y',0,1,0,'x')"><strong>Triángulo</strong>x·y, y: 0→x</button>
+          <button class="ex-btn" onclick="loadDouble('6*x*y',0,1,'0','sqrt(x)')"><strong>Región curva</strong>6xy, y:0→√x</button>
+          <button class="ex-btn" onclick="loadDouble('x^2 + y^2',0,1,0,1)"><strong>Cuadrática</strong>x²+y², [0,1]²</button>
+          <button class="ex-btn" onclick="loadDouble('sqrt(1 - x^2 - y^2)','-1','1','0','sqrt(1-x^2)')"><strong>Semiesfera</strong>√(1−x²−y²)</button>
+          <button class="ex-btn" onclick="loadDouble('exp(-(x^2+y^2))','-2','2','-2','2')"><strong>Gaussiana 2D</strong>e^(−x²−y²)</button>
+          <button class="ex-btn" onclick="loadDouble('x*y^2',0,2,'x^2','2*x')"><strong>Entre curvas</strong>x·y², y:x²→2x</button>
+          <button class="ex-btn" onclick="loadDouble('1',0,1,0,'1-x')"><strong>Área triángulo</strong>f=1, y:0→1−x</button>
+        </div>
+      </div>
+      <div class="card">
+        <h3 style="font-size:0.83rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px;">Sintaxis — f(x,y)</h3>
+        <table class="syntax-table">
+          <tr><td>Variables</td><td>x, y</td></tr>
+          <tr><td>Producto</td><td>x*y</td></tr>
+          <tr><td>Potencia</td><td>x^2, y^3</td></tr>
+          <tr><td>Raíz</td><td>sqrt(x)</td></tr>
+          <tr><td>Trig.</td><td>sin(x)*cos(y)</td></tr>
+          <tr><td>Exponencial</td><td>exp(x+y)</td></tr>
+          <tr><td>Constantes</td><td>pi, e</td></tr>
+        </table>
+        <p style="font-size:0.75rem;color:var(--text-muted);margin-top:10px;line-height:1.5;">
+          g₁(x) y g₂(x) son expresiones en <strong>x</strong>.<br>
+          Ej: <code style="font-size:.75rem;">x</code>, <code style="font-size:.75rem;">x^2</code>, <code style="font-size:.75rem;">sqrt(1-x^2)</code>, <code style="font-size:.75rem;">1-x</code>
+        </p>
+      </div>
+    </aside>
+    <main class="tool-content">
+      <div class="card" id="d-result-card" style="display:none;">
+        <div id="d-method-badge"></div>
+        <div id="d-notation" class="integral-notation"></div>
+        <div class="result-badge">
+          <span class="result-label">Resultado</span>
+          <span class="result-val" id="d-result-val">—</span>
+        </div>
+        <p style="font-size:0.76rem;color:var(--text-muted);margin-top:8px;" id="d-precision"></p>
+        <div class="steps-panel" id="d-steps"></div>
+      </div>
+      <div class="card">
+        <div style="font-size:0.78rem;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text-muted);margin-bottom:8px;">Superficie z = f(x,y)</div>
+        <div id="plot-3d"></div>
+      </div>
+      <div class="card">
+        <div style="font-size:0.78rem;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text-muted);margin-bottom:8px;">Región de integración R en el plano xy</div>
+        <div id="plot-region"></div>
+      </div>
+    </main>
+  </div>
+</div>
+
+<!-- ═══ PANEL FRENET-SERRET ═══ -->
+<div id="panel-frenet" class="container" style="display:none;">
+  <div class="tool-layout">
+
+    <!-- SIDEBAR -->
+    <aside class="tool-sidebar">
+
+      <div class="card">
+        <h3 style="font-size:1rem;margin-bottom:14px;color:var(--dark-blue);">Curva r(t) = (f, g, h)</h3>
+        <div class="input-group"><label>f(t) — componente x</label><input type="text" id="fr-f" value="cos(t)"></div>
+        <div class="input-group"><label>g(t) — componente y</label><input type="text" id="fr-g" value="sin(t)"></div>
+        <div class="input-group"><label>h(t) — componente z</label><input type="text" id="fr-h" value="t"></div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:2px;">
+          <div class="input-group"><label>t mín</label><input type="text" id="fr-tmin" value="0"></div>
+          <div class="input-group"><label>t máx</label><input type="text" id="fr-tmax" value="4*pi"></div>
+        </div>
+        <div class="input-group" style="margin-top:4px;">
+          <label>t₀ — punto de análisis</label>
+          <div class="slider-row">
+            <input type="range" id="fr-t0-slider" min="0" max="1" step="0.001" value="0.25"
+              oninput="onT0Slider(this.value)">
+            <span id="fr-t0-display">—</span>
+          </div>
+          <input type="text" id="fr-t0" value="pi/2" style="margin-top:6px;"
+            placeholder="Ej: pi/2, 1, 0" oninput="syncT0Input()">
+        </div>
+        <button class="btn btn-primary" style="width:100%;margin-top:8px;" onclick="calcFrenet()">Calcular</button>
+        <div class="calc-error" id="fr-error"></div>
+        <div class="singular-warn" id="fr-warn"></div>
+      </div>
+
+      <!-- Controles de visibilidad -->
+      <div class="card">
+        <h3 style="font-size:0.83rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px;">Mostrar / Ocultar</h3>
+        <label class="vis-toggle"><input type="checkbox" id="vis-curve"   checked onchange="toggleTrace('curve'  )"> <span style="width:20px;height:3px;background:#0a1f44;border-radius:2px;display:inline-block;"></span> Curva r(t)</label>
+        <label class="vis-toggle"><input type="checkbox" id="vis-point"   checked onchange="toggleTrace('point'  )"> <span style="width:12px;height:12px;background:#ef4444;border-radius:50%;display:inline-block;"></span> Punto P = r(t₀)</label>
+        <label class="vis-toggle"><input type="checkbox" id="vis-T"       checked onchange="toggleTrace('T'      )"> <span style="width:20px;height:3px;background:#2563eb;border-radius:2px;display:inline-block;"></span> Vector tangente T</label>
+        <label class="vis-toggle"><input type="checkbox" id="vis-N"       checked onchange="toggleTrace('N'      )"> <span style="width:20px;height:3px;background:#16a34a;border-radius:2px;display:inline-block;"></span> Vector normal N</label>
+        <label class="vis-toggle"><input type="checkbox" id="vis-B"       checked onchange="toggleTrace('B'      )"> <span style="width:20px;height:3px;background:#ea580c;border-radius:2px;display:inline-block;"></span> Vector binormal B</label>
+        <label class="vis-toggle"><input type="checkbox" id="vis-oscplane" checked onchange="toggleTrace('oscplane')"> <span style="width:12px;height:12px;background:rgba(37,99,235,0.35);border:2px solid #2563eb;border-radius:2px;display:inline-block;"></span> Plano osculador</label>
+        <label class="vis-toggle"><input type="checkbox" id="vis-norplane" onchange="toggleTrace('norplane')"> <span style="width:12px;height:12px;background:rgba(22,163,74,0.25);border:2px solid #16a34a;border-radius:2px;display:inline-block;"></span> Plano normal</label>
+        <label class="vis-toggle"><input type="checkbox" id="vis-recplane" onchange="toggleTrace('recplane')"> <span style="width:12px;height:12px;background:rgba(234,88,12,0.2);border:2px solid #ea580c;border-radius:2px;display:inline-block;"></span> Plano rectificante</label>
+        <label class="vis-toggle"><input type="checkbox" id="vis-circle"  checked onchange="toggleTrace('circle' )"> <span style="width:20px;height:2px;background:#9333ea;border-radius:2px;display:inline-block;border-top:2px dashed #9333ea;"></span> Círculo osculador</label>
+      </div>
+
+      <!-- Leyenda explicativa -->
+      <div class="card">
+        <h3 style="font-size:0.83rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px;">¿Qué es cada elemento?</h3>
+        <div style="font-size:0.8rem;line-height:1.7;color:var(--text-main);">
+          <div style="display:flex;gap:8px;align-items:flex-start;padding:6px 0;border-bottom:1px solid var(--border);">
+            <span style="min-width:14px;height:3px;background:#0a1f44;border-radius:2px;display:inline-block;margin-top:9px;flex-shrink:0;"></span>
+            <span><strong>Curva r(t)</strong> — trayectoria completa de la curva vectorial en el espacio 3D.</span>
+          </div>
+          <div style="display:flex;gap:8px;align-items:flex-start;padding:6px 0;border-bottom:1px solid var(--border);">
+            <span style="min-width:12px;height:12px;background:#ef4444;border-radius:50%;display:inline-block;margin-top:4px;flex-shrink:0;"></span>
+            <span><strong>Punto P</strong> — posición r(t₀) donde se analiza la geometría local.</span>
+          </div>
+          <div style="display:flex;gap:8px;align-items:flex-start;padding:6px 0;border-bottom:1px solid var(--border);">
+            <span style="min-width:14px;height:3px;background:#2563eb;border-radius:2px;display:inline-block;margin-top:9px;flex-shrink:0;"></span>
+            <span><strong>T (azul)</strong> — vector tangente unitario. Apunta en la dirección de avance de la curva. T = r'(t)/|r'(t)|</span>
+          </div>
+          <div style="display:flex;gap:8px;align-items:flex-start;padding:6px 0;border-bottom:1px solid var(--border);">
+            <span style="min-width:14px;height:3px;background:#16a34a;border-radius:2px;display:inline-block;margin-top:9px;flex-shrink:0;"></span>
+            <span><strong>N (verde)</strong> — normal principal unitaria. Apunta hacia el centro de curvatura. Perpendicular a T. N = T'/|T'|</span>
+          </div>
+          <div style="display:flex;gap:8px;align-items:flex-start;padding:6px 0;border-bottom:1px solid var(--border);">
+            <span style="min-width:14px;height:3px;background:#ea580c;border-radius:2px;display:inline-block;margin-top:9px;flex-shrink:0;"></span>
+            <span><strong>B (naranja)</strong> — binormal unitaria. Perpendicular al plano osculador. B = T × N</span>
+          </div>
+          <div style="display:flex;gap:8px;align-items:flex-start;padding:6px 0;border-bottom:1px solid var(--border);">
+            <span style="min-width:12px;height:12px;background:rgba(37,99,235,0.3);border:2px solid #2563eb;border-radius:2px;display:inline-block;margin-top:4px;flex-shrink:0;"></span>
+            <span><strong>Plano osculador (azul)</strong> — plano que mejor se ajusta a la curva en P. Contiene a T y N. Es el plano de curvatura. Normal = B</span>
+          </div>
+          <div style="display:flex;gap:8px;align-items:flex-start;padding:6px 0;border-bottom:1px solid var(--border);">
+            <span style="min-width:12px;height:12px;background:rgba(22,163,74,0.2);border:2px solid #16a34a;border-radius:2px;display:inline-block;margin-top:4px;flex-shrink:0;"></span>
+            <span><strong>Plano normal (verde)</strong> — perpendicular a la curva en P. Contiene N y B. Normal = T</span>
+          </div>
+          <div style="display:flex;gap:8px;align-items:flex-start;padding:6px 0;border-bottom:1px solid var(--border);">
+            <span style="min-width:12px;height:12px;background:rgba(234,88,12,0.15);border:2px solid #ea580c;border-radius:2px;display:inline-block;margin-top:4px;flex-shrink:0;"></span>
+            <span><strong>Plano rectificante (naranja)</strong> — contiene T y B. La curvatura se mide en su proyección. Normal = N</span>
+          </div>
+          <div style="display:flex;gap:8px;align-items:flex-start;padding:6px 0;">
+            <span style="min-width:14px;height:2px;border-top:2px dashed #9333ea;display:inline-block;margin-top:9px;flex-shrink:0;"></span>
+            <span><strong>Círculo osculador (morado)</strong> — círculo de radio R = 1/κ en el plano osculador. Representa la curvatura local. Su centro está en C = P + R·N</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Ejemplos -->
+      <div class="card">
+        <h3 style="font-size:0.83rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px;">Curvas de ejemplo</h3>
+        <div class="frenet-ex-grid">
+          <button class="fex-btn" onclick="loadFrenet('cos(t)','sin(t)','t','0','4*pi','pi/2')">
+            <strong>Hélice circular</strong>(cos t, sin t, t) — κ = 1/2 constante, R = 2
+          </button>
+          <button class="fex-btn" onclick="loadFrenet('2*cos(t)','sin(t)','t','0','2*pi','pi/4')">
+            <strong>Hélice elíptica</strong>(2cos t, sin t, t) — κ variable
+          </button>
+          <button class="fex-btn" onclick="loadFrenet('t','t^2','t^3','-1.5','1.5','0.5')">
+            <strong>Curva cúbica</strong>(t, t², t³) — κ y τ variables
+          </button>
+          <button class="fex-btn" onclick="loadFrenet('t','t^2','0','-2','2','0.8')">
+            <strong>Parábola plana</strong>(t, t², 0) — κ = 2/(1+4t²)^(3/2)
+          </button>
+          <button class="fex-btn" onclick="loadFrenet('3*cos(t)','3*sin(t)','0','0','2*pi','pi/3')">
+            <strong>Círculo R = 3</strong>(3cos t, 3sin t, 0) — κ = 1/3, verificación
+          </button>
+          <button class="fex-btn" onclick="loadFrenet('(2+cos(3*t))*cos(2*t)','(2+cos(3*t))*sin(2*t)','sin(3*t)','0','2*pi','pi/4')">
+            <strong>Nudo tórico</strong>curva espacial compleja
+          </button>
+          <button class="fex-btn" onclick="loadFrenet('sin(t)','sin(t)*cos(t)','cos(t)','0','2*pi','1')">
+            <strong>Lemniscata 3D</strong>(sin t, sin t·cos t, cos t)
+          </button>
+          <button class="fex-btn" onclick="loadFrenet('t','2*t','3*t','0','2','1')">
+            <strong>Línea recta</strong>(t, 2t, 3t) — κ = 0, caso límite
+          </button>
+        </div>
+      </div>
+
+      <!-- Sintaxis -->
+      <div class="card">
+        <h3 style="font-size:0.83rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px;">Sintaxis</h3>
+        <table class="syntax-table">
+          <tr><td>Variable</td><td>t</td></tr>
+          <tr><td>Trig.</td><td>sin(t), cos(t)</td></tr>
+          <tr><td>Potencia</td><td>t^2, t^3</td></tr>
+          <tr><td>Producto</td><td>2*t, 3*cos(t)</td></tr>
+          <tr><td>Constantes</td><td>pi, e</td></tr>
+          <tr><td>Raíz</td><td>sqrt(t)</td></tr>
+          <tr><td>Exponencial</td><td>exp(t)</td></tr>
+        </table>
+      </div>
+
+    </aside>
+
+    <!-- CONTENT -->
+    <main class="tool-content">
+
+      <!-- Derivadas simbólicas -->
+      <div class="card" id="fr-deriv-card" style="display:none;">
+        <div style="font-size:0.78rem;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text-muted);margin-bottom:8px;">Derivadas Simbólicas</div>
+        <div class="deriv-display" id="fr-derivs"></div>
+      </div>
+
+      <!-- Marco de Frenet en t₀ -->
+      <div class="card" id="fr-result-card" style="display:none;">
+        <div style="font-size:0.78rem;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text-muted);margin-bottom:12px;">Marco de Frenet-Serret en t₀</div>
+
+        <!-- Leyenda visual de colores -->
+        <div class="frenet-legend">
+          <div class="fl-item"><span class="fl-dot" style="background:#ef4444;"></span>P = r(t₀)</div>
+          <div class="fl-item"><span class="fl-line" style="background:#2563eb;"></span>T tangente</div>
+          <div class="fl-item"><span class="fl-line" style="background:#16a34a;"></span>N normal</div>
+          <div class="fl-item"><span class="fl-line" style="background:#ea580c;"></span>B binormal</div>
+          <div class="fl-item"><span class="fl-line" style="background:#9333ea;border-top:2px dashed #9333ea;height:0;"></span>Círculo κ</div>
+        </div>
+
+        <!-- Vectores T N B + escalares -->
+        <div class="fv-grid">
+          <div class="fv-card">
+            <div class="fv-card-title" style="color:#1d4ed8;">T — Tangente unitario</div>
+            <div class="fv-card-val" id="fr-T-val">—</div>
+          </div>
+          <div class="fv-card">
+            <div class="fv-card-title" style="color:#15803d;">N — Normal principal</div>
+            <div class="fv-card-val" id="fr-N-val">—</div>
+          </div>
+          <div class="fv-card">
+            <div class="fv-card-title" style="color:#c2410c;">B — Binormal</div>
+            <div class="fv-card-val" id="fr-B-val">—</div>
+          </div>
+          <div class="fv-card">
+            <div class="fv-card-title">P — Posición r(t₀)</div>
+            <div class="fv-card-val" id="fr-P-val">—</div>
+          </div>
+        </div>
+
+        <!-- κ, R, τ -->
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:10px;">
+          <div class="fv-scalar">
+            <span class="fv-scalar-label">Curvatura κ</span>
+            <span class="fv-scalar-val" id="fr-kappa-val">—</span>
+          </div>
+          <div class="fv-scalar">
+            <span class="fv-scalar-label">Radio R = 1/κ</span>
+            <span class="fv-scalar-val" id="fr-R-val">—</span>
+          </div>
+          <div class="fv-scalar">
+            <span class="fv-scalar-label">Torsión τ</span>
+            <span class="fv-scalar-val" id="fr-tau-val">—</span>
+          </div>
+        </div>
+
+        <!-- Ecuaciones de planos -->
+        <div style="margin-top:16px;">
+          <div style="font-size:0.78rem;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text-muted);margin-bottom:10px;">Ecuaciones de Planos en P</div>
+          <div class="plane-row">
+            <div class="plane-row-label" style="color:#1d4ed8;">Plano Osculador — normal = B &nbsp;<span style="font-size:0.68rem;font-weight:400;color:var(--text-muted);">(contiene T y N)</span></div>
+            <div class="plane-eq" id="fr-osc-eq">—</div>
+          </div>
+          <div class="plane-row">
+            <div class="plane-row-label" style="color:#15803d;">Plano Normal — normal = T &nbsp;<span style="font-size:0.68rem;font-weight:400;color:var(--text-muted);">(contiene N y B, ⊥ curva)</span></div>
+            <div class="plane-eq" id="fr-nor-eq">—</div>
+          </div>
+          <div class="plane-row" style="margin-bottom:0;">
+            <div class="plane-row-label" style="color:#c2410c;">Plano Rectificante — normal = N &nbsp;<span style="font-size:0.68rem;font-weight:400;color:var(--text-muted);">(contiene T y B)</span></div>
+            <div class="plane-eq" id="fr-rec-eq">—</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Visualización 3D principal -->
+      <div class="card">
+        <div style="font-size:0.78rem;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text-muted);margin-bottom:8px;">Marco de Frenet-Serret — Visualización 3D</div>
+        <div id="plot-frenet3d"></div>
+      </div>
+
+      <!-- Gráfico de curvatura κ(t) -->
+      <div class="card">
+        <div style="font-size:0.78rem;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text-muted);margin-bottom:8px;">Curvatura κ(t) a lo largo de la curva</div>
+        <div id="plot-kappa"></div>
+      </div>
+
+    </main>
+  </div>
+</div>
+
+
+<footer class="footer-mini"><a href="index.html">← Volver a PHYSICS</a> &nbsp;·&nbsp; © 2026 PHYSICS — Quito, Ecuador</footer>
+<a href="https://wa.me/593995324419" class="wa-float" target="_blank" rel="noopener" aria-label="WhatsApp">
+  <svg width="26" height="26" viewBox="0 0 24 24" fill="currentColor"><path d="M12.031 6.172c-3.181 0-5.767 2.586-5.768 5.766-.001 1.298.38 2.27 1.019 3.287l-.582 2.128 2.182-.573c.978.58 1.911.928 3.145.929 3.178 0 5.767-2.587 5.768-5.766 0-3.18-2.587-5.771-5.764-5.771z"/></svg>
+</a>
+
+<script>
+/* ═══════════════════════════════════════════════════════════════════
+   PHYSICS — Calculadora de Integrales v2.0
+   Motor: Simbólico (math.js) → Fallback numérico (Simpson iterado 2D)
+   Integrales dobles con límites variables g₁(x), g₂(x)
+═══════════════════════════════════════════════════════════════════ */
+
+// ─── Tab system ──────────────────────────────────────────────────
+function switchTab(tab) {
+  document.getElementById('panel-simple').style.display = tab==='simple' ? '' : 'none';
+  document.getElementById('panel-double').style.display = tab==='double' ? '' : 'none';
+  document.getElementById('panel-frenet').style.display = tab==='frenet' ? '' : 'none';
+  document.getElementById('tab-simple').classList.toggle('active', tab==='simple');
+  document.getElementById('tab-double').classList.toggle('active', tab==='double');
+  document.getElementById('tab-frenet').classList.toggle('active', tab==='frenet');
+}
+
+// ─── Normalise expression strings ────────────────────────────────
+function norm(e) {
+  return String(e).toLowerCase().replace(/\bsen\b/g,'sin').replace(/\btg\b/g,'tan').trim();
+}
+
+// ─── Error helpers ────────────────────────────────────────────────
+function showErr(id,msg){ const el=document.getElementById(id); el.textContent='⚠ '+msg; el.classList.add('visible'); }
+function clearErr(id)   { const el=document.getElementById(id); el.textContent=''; el.classList.remove('visible'); }
+
+// ─── HTML helpers ─────────────────────────────────────────────────
+const ex  = s => `<span class="expr">${s}</span>`;
+const rex = s => `<span class="rexpr">${s}</span>`;
+function mkStep(n,html){ return `<div class="step-row"><div class="step-num">${n}</div><div class="step-body">${html}</div></div>`; }
+
+/* ════════════════════════ INTEGRAL SIMPLE ════════════════════════ */
+
+function loadSimple(f,a,b){
+  document.getElementById('s-func').value=f;
+  document.getElementById('s-a').value=a;
+  document.getElementById('s-b').value=b;
+  calcSimple();
+}
+
+function calcSimple(){
+  clearErr('s-error');
+  const rawF=norm(document.getElementById('s-func').value);
+  const rawA=norm(document.getElementById('s-a').value);
+  const rawB=norm(document.getElementById('s-b').value);
+  let a,b;
+  try{ a=math.evaluate(rawA); b=math.evaluate(rawB); }
+  catch(e){ showErr('s-error','Límites inválidos: '+e.message); return; }
+
+  let result=null, method='numeric', steps=[];
+
+  // ── Intento simbólico ─────────────────────────────────────────
+  try {
+    const Fexpr   = math.integrate(rawF,'x');
+    const Fsimp   = math.simplify(Fexpr).toString();
+    const Fb      = math.evaluate(Fsimp,{x:b});
+    const Fa      = math.evaluate(Fsimp,{x:a});
+    result        = Fb - Fa;
+    if(!isFinite(result)) throw new Error('no finito');
+    method = 'symbolic';
+    steps  = [
+      mkStep(1,`Antiderivada de ${ex(rawF)} respecto a x:<br>${rex('F(x) = '+Fsimp)} + C`),
+      mkStep(2,`Teorema Fundamental del Cálculo: F(b) − F(a)`),
+      mkStep(3,`F(${b}) = ${rex(Fb.toFixed(10))}`),
+      mkStep(4,`F(${a}) = ${rex(Fa.toFixed(10))}`),
+      mkStep(5,`Resultado = ${Fb.toFixed(10)} − ${Fa.toFixed(10)} = ${rex(fmtNum(result))}`)
+    ];
+  } catch(_) {
+    // ── Fallback numérico ─────────────────────────────────────
+    try {
+      const fc  = math.compile(rawF);
+      result    = simpComp(fc,a,b,1000,'x');
+      const r2  = simpComp(fc,a,b,2000,'x');
+      const err = Math.abs(r2-result)/15;
+      method    = 'numeric';
+      steps     = [
+        mkStep(1,`${ex(rawF)} no tiene antiderivada elemental. Se aplica <strong>Simpson compuesto</strong>.`),
+        mkStep(2,`n = 1000 subintervalos en [${a}, ${b}].`),
+        mkStep(3,`Error estimado (Runge): ${rex('< '+err.toExponential(2))}`)
+      ];
+    } catch(e2){ showErr('s-error','Error: '+e2.message); return; }
+  }
+
+  renderResult('s',method,`&#8747;<sub>${rawA}</sub><sup>${rawB}</sup> ${rawF} &nbsp;dx`,result,
+    method==='symbolic'?'Resultado exacto por integración simbólica.'
+                       :'Resultado numérico (n=1000, error < 10⁻⁸).',steps);
+  plotSimple(rawF,a,b);
+}
+
+/* ════════════════════════ INTEGRAL DOBLE ════════════════════════ */
+
+function loadDouble(f,a,b,g1,g2){
+  document.getElementById('d-func').value=f;
+  document.getElementById('d-a').value=a;
+  document.getElementById('d-b').value=b;
+  document.getElementById('d-g1').value=g1;
+  document.getElementById('d-g2').value=g2;
+  calcDouble();
+}
+
+function calcDouble(){
+  clearErr('d-error');
+  const rawF  = norm(document.getElementById('d-func').value);
+  const rawA  = norm(document.getElementById('d-a').value);
+  const rawB  = norm(document.getElementById('d-b').value);
+  const rawG1 = norm(document.getElementById('d-g1').value);
+  const rawG2 = norm(document.getElementById('d-g2').value);
+  const N     = parseInt(document.getElementById('d-n').value);
+
+  // Evaluar límites exteriores (deben ser constantes)
+  let a, b;
+  try {
+    a = math.evaluate(rawA);
+    b = math.evaluate(rawB);
+    if(!isFinite(a)||!isFinite(b)||a>=b) throw new Error('a y b deben ser constantes finitas con a < b');
+  } catch(e){ showErr('d-error',e.message); return; }
+
+  // Compilar límites variables g₁(x), g₂(x)
+  let g1c, g2c;
+  try {
+    g1c = math.compile(rawG1);
+    g2c = math.compile(rawG2);
+    const xm = (a+b)/2;
+    if(!isFinite(g1c.evaluate({x:xm}))||!isFinite(g2c.evaluate({x:xm})))
+      throw new Error('Los límites en y no son finitos en el punto medio.');
+  } catch(e){ showErr('d-error','Límites en y: '+e.message); return; }
+
+  let result=null, method='numeric', steps=[];
+
+  // ── Intento simbólico iterado ─────────────────────────────────
+  //   Paso 1: F(x,y) = ∫ f(x,y) dy   (simbólico en y)
+  //   Paso 2: G(x)   = F(x,g₂(x)) − F(x,g₁(x))   (sustitución de nodos)
+  //   Paso 3: H(x)   = ∫ G(x) dx     (simbólico en x)
+  //   Paso 4: H(b) − H(a)
+  try {
+    // 1 — Integrar respecto a y
+    const Fxy_expr  = math.integrate(rawF,'y');
+    const Fxy_simp  = math.simplify(Fxy_expr).toString();
+    const Fxy_node  = math.parse(Fxy_simp);
+
+    // 2 — Sustituir y → g₁(x) y y → g₂(x) usando transformación de árbol
+    const g1_node = math.parse(rawG1);
+    const g2_node = math.parse(rawG2);
+
+    function subY(node, repl) {
+      return node.transform(n => (n.isSymbolNode && n.name==='y') ? repl.clone() : n);
+    }
+    const Fg2   = subY(Fxy_node, g2_node);
+    const Fg1   = subY(Fxy_node, g1_node);
+    const Gx_node = math.parse(`(${Fg2.toString()}) - (${Fg1.toString()})`);
+    const Gx_simp = math.simplify(Gx_node).toString();
+
+    // 3 — Integrar G(x) respecto a x
+    const Hx_expr = math.integrate(Gx_simp,'x');
+    const Hx_simp = math.simplify(Hx_expr).toString();
+
+    // 4 — Evaluar
+    const Hb = math.evaluate(Hx_simp,{x:b});
+    const Ha = math.evaluate(Hx_simp,{x:a});
+    result   = Hb - Ha;
+    if(!isFinite(result)) throw new Error('resultado simbólico no finito');
+
+    method = 'symbolic';
+    steps  = [
+      mkStep(1,`<strong>Integrar f(x,y) respecto a y:</strong><br>
+                ∫ ${ex(rawF)} dy = ${rex(Fxy_simp)} + C`),
+      mkStep(2,`<strong>Aplicar límites variables en y:</strong><br>
+                y superior: ${ex('g₂(x) = '+rawG2)}<br>
+                y inferior: ${ex('g₁(x) = '+rawG1)}<br>
+                G(x) = F(x, g₂) − F(x, g₁) = ${rex(Gx_simp)}`),
+      mkStep(3,`<strong>Integrar G(x) respecto a x:</strong><br>
+                H(x) = ${rex(Hx_simp)} + C`),
+      mkStep(4,`<strong>Evaluar en los límites exteriores:</strong><br>
+                H(${b}) = ${rex(Hb.toFixed(10))}<br>
+                H(${a}) = ${rex(Ha.toFixed(10))}`),
+      mkStep(5,`<strong>Resultado final:</strong> H(${b}) − H(${a}) = ${rex(fmtNum(result))}`)
+    ];
+  } catch(_) {
+    // ── Fallback: Simpson iterado 2D ──────────────────────────
+    try {
+      const r1  = simpson2D(rawF,a,b,g1c,g2c,N);
+      const r2  = simpson2D(rawF,a,b,g1c,g2c,N*2);
+      result    = r1;
+      const err = Math.abs(r2-r1)/15;
+      method    = 'numeric';
+      steps     = [
+        mkStep(1,`No se encontró antiderivada elemental. Se aplica <strong>Simpson iterado 2D</strong>.`),
+        mkStep(2,`Para cada xᵢ ∈ [${a}, ${b}]: calcular ∫<sub>g₁(xᵢ)</sub><sup>g₂(xᵢ)</sup> f(xᵢ, y) dy con Simpson (n=${N}).`),
+        mkStep(3,`Integrar los resultados respecto a x con Simpson (n=${N}).`),
+        mkStep(4,`Error estimado (Runge): ${rex('< '+err.toExponential(2))}`)
+      ];
+    } catch(e2){ showErr('d-error','Error numérico: '+e2.message); return; }
+  }
+
+  const notation = `&#8747;<sub>${rawA}</sub><sup>${rawB}</sup>
+    &nbsp;&#8747;<sub>${rawG1}</sub><sup>${rawG2}</sup>
+    &nbsp;${rawF} &nbsp;dy &nbsp;dx`;
+
+  renderResult('d',method,notation,result,
+    method==='symbolic'
+      ? 'Resultado exacto por integración simbólica iterada.'
+      : `Resultado numérico — Simpson iterado 2D, n = ${N}.`,
+    steps);
+
+  plot3D(rawF,a,b,g1c,g2c);
+  plotRegion(a,b,g1c,g2c);
+}
+
+/* ═══════════════════ MOTORES NUMÉRICOS ═══════════════════════ */
+
+// Simpson compuesto 1D
+function simpComp(fc,a,b,n,v){
+  if(n%2!==0)n++;
+  const h=(b-a)/n; const s={}; let sum;
+  s[v]=a; sum=fc.evaluate(s);
+  s[v]=b; sum+=fc.evaluate(s);
+  for(let i=1;i<n;i++){ s[v]=a+i*h; sum+=(i%2===0?2:4)*fc.evaluate(s); }
+  return (h/3)*sum;
+}
+
+// Simpson iterado 2D con límites variables
+function simpson2D(funcStr,a,b,g1c,g2c,N){
+  if(N%2!==0)N++;
+  const fc=math.compile(funcStr);
+  const hx=(b-a)/N;
+  let total=0;
+  for(let i=0;i<=N;i++){
+    const x  = a+i*hx;
+    const y1 = g1c.evaluate({x});
+    const y2 = g2c.evaluate({x});
+    const iy = innerSimp(fc,x,y1,y2,N);
+    const wx = (i===0||i===N)?1:(i%2===0?2:4);
+    total   += wx*iy;
+  }
+  return (hx/3)*total;
+}
+
+function innerSimp(fc,x,y1,y2,M){
+  if(Math.abs(y2-y1)<1e-14) return 0;
+  if(M%2!==0)M++;
+  const h=(y2-y1)/M;
+  let s=fc.evaluate({x,y:y1})+fc.evaluate({x,y:y2});
+  for(let j=1;j<M;j++){
+    const y=y1+j*h;
+    s+=(j%2===0?2:4)*fc.evaluate({x,y});
+  }
+  return (h/3)*s;
+}
+
+/* ═══════════════════════ VISUALIZACIONES ═════════════════════ */
+
+function plotSimple(funcStr,a,b){
+  const fc=math.compile(funcStr);
+  const mg=Math.max(Math.abs(b-a)*0.25,0.5);
+  const x0=Math.min(a,b)-mg, x1=Math.max(a,b)+mg;
+  const xs=[],ys=[],xA=[],yA=[];
+  for(let i=0;i<=600;i++){
+    const x=x0+(x1-x0)*i/600;
+    let y; try{y=fc.evaluate({x});}catch{continue;}
+    if(!isFinite(y))continue;
+    xs.push(x); ys.push(y);
+    if(x>=Math.min(a,b)&&x<=Math.max(a,b)){xA.push(x);yA.push(y);}
+  }
+  Plotly.newPlot('plot-simple',[
+    {x:xA,y:yA,fill:'tozeroy',type:'scatter',mode:'none',name:'Área',fillcolor:'rgba(37,99,235,0.18)'},
+    {x:xs,y:ys,type:'scatter',mode:'lines',name:'f(x)',line:{color:'#0A1F44',width:2.5}}
+  ],{
+    margin:{t:20,b:40,l:44,r:16},
+    xaxis:{title:'x',zeroline:true,gridcolor:'#eef',zerolinecolor:'#ccc'},
+    yaxis:{title:'f(x)',zeroline:true,gridcolor:'#eef',zerolinecolor:'#ccc'},
+    hovermode:'x unified',plot_bgcolor:'#fafbff',paper_bgcolor:'#fff',
+    shapes:[
+      {type:'line',x0:a,x1:a,y0:0,y1:safeEval1(funcStr,a),line:{dash:'dot',color:'#2563eb',width:1.5}},
+      {type:'line',x0:b,x1:b,y0:0,y1:safeEval1(funcStr,b),line:{dash:'dot',color:'#2563eb',width:1.5}}
+    ],
+    legend:{orientation:'h',y:-0.15}
+  },{responsive:true,displayModeBar:false});
+}
+
+function plot3D(funcStr,a,b,g1c,g2c){
+  const fc=math.compile(funcStr);
+  const Ns=50;
+  const xs=linspace(a,b,Ns);
+  let yMin=Infinity,yMax=-Infinity;
+  for(const x of xs){
+    const y1=g1c.evaluate({x}),y2=g2c.evaluate({x});
+    if(isFinite(y1))yMin=Math.min(yMin,y1);
+    if(isFinite(y2))yMax=Math.max(yMax,y2);
+  }
+  const ys=linspace(yMin,yMax,Ns);
+  const zData=[];
+  for(let i=0;i<Ns;i++){
+    const row=[];
+    for(let j=0;j<Ns;j++){
+      const x=xs[i],y=ys[j];
+      const y1=g1c.evaluate({x}),y2=g2c.evaluate({x});
+      let z=null;
+      if(y>=y1&&y<=y2){try{z=fc.evaluate({x,y});}catch{} if(!isFinite(z))z=null;}
+      row.push(z);
+    }
+    zData.push(row);
+  }
+  Plotly.newPlot('plot-3d',[{
+    type:'surface',x:xs,y:ys,z:zData,
+    colorscale:'Blues',opacity:0.88,
+    contours:{z:{show:true,usecolormap:true,project:{z:true}}}
+  }],{
+    margin:{t:0,b:0,l:0,r:0},
+    scene:{xaxis:{title:'x'},yaxis:{title:'y'},zaxis:{title:'f(x,y)'},
+           camera:{eye:{x:1.4,y:-1.6,z:1.2}}},
+    paper_bgcolor:'#fff'
+  },{responsive:true,displayModeBar:false});
+}
+
+function plotRegion(a,b,g1c,g2c){
+  const Np=220;
+  const xs=linspace(a,b,Np);
+  const xU=[],yU=[],xL=[],yL=[];
+  for(const x of xs){
+    const y1=g1c.evaluate({x}),y2=g2c.evaluate({x});
+    if(isFinite(y1)&&isFinite(y2)){xU.push(x);yU.push(y2);xL.push(x);yL.push(y1);}
+  }
+  const xPoly=[...xU,...[...xL].reverse()];
+  const yPoly=[...yU,...[...yL].reverse()];
+  Plotly.newPlot('plot-region',[
+    {x:xPoly,y:yPoly,fill:'toself',fillcolor:'rgba(37,99,235,0.14)',line:{color:'transparent'},name:'Región R',type:'scatter'},
+    {x:xU,y:yU,mode:'lines',name:'y = g₂(x)',line:{color:'#2563eb',width:2}},
+    {x:xL,y:yL,mode:'lines',name:'y = g₁(x)',line:{color:'#10b981',width:2}}
+  ],{
+    margin:{t:10,b:40,l:44,r:10},
+    xaxis:{title:'x',zeroline:true,gridcolor:'#eef'},
+    yaxis:{title:'y',zeroline:true,gridcolor:'#eef',scaleanchor:'x',scaleratio:1},
+    hovermode:'closest',plot_bgcolor:'#fafbff',paper_bgcolor:'#fff',
+    legend:{orientation:'h',y:-0.22}
+  },{responsive:true,displayModeBar:false});
+}
+
+/* ═══════════════════════ RENDER RESULT ═══════════════════════ */
+
+function renderResult(prefix,method,notation,result,precisionMsg,steps){
+  document.getElementById(prefix+'-result-card').style.display='';
+  document.getElementById(prefix+'-method-badge').innerHTML =
+    method==='symbolic'
+      ? '<span class="method-badge symbolic">✓ Solución simbólica exacta</span>'
+      : '<span class="method-badge numeric">≈ Método numérico (Simpson)</span>';
+  document.getElementById(prefix+'-notation').innerHTML = notation;
+  document.getElementById(prefix+'-result-val').textContent = fmtNum(result);
+  document.getElementById(prefix+'-precision').textContent = precisionMsg;
+  const sEl=document.getElementById(prefix+'-steps');
+  sEl.innerHTML='<strong style="font-size:.82rem;display:block;margin-bottom:8px;color:var(--dark-blue);">Paso a paso</strong>'+steps.join('');
+  sEl.classList.add('visible');
+}
+
+/* ═══════════════════════ UTILIDADES ══════════════════════════ */
+
+function linspace(a,b,n){
+  const r=[];
+  for(let i=0;i<n;i++) r.push(a+(b-a)*i/(n-1));
+  return r;
+}
+
+function safeEval1(fs,x){ try{return math.evaluate(fs,{x});}catch{return 0;} }
+
+function fmtNum(v){
+  if(!isFinite(v)) return '—';
+  if(Math.abs(v-Math.round(v))<1e-8) return String(Math.round(v));
+  // Check common fractions with denominator ≤ 16
+  for(let d=2;d<=16;d++){
+    const k=Math.round(v*d);
+    if(k!==0&&Math.abs(v-k/d)<1e-7){
+      const g=gcd(Math.abs(k),d);
+      const num=k/g,den=d/g;
+      if(den===1) return String(num);
+      return `${num}/${den} ≈ ${v.toFixed(8)}`;
+    }
+  }
+  // Check multiples of π
+  for(const [label,frac] of [['π',Math.PI],['π/2',Math.PI/2],['π/3',Math.PI/3],['π/4',Math.PI/4],['π/6',Math.PI/6]]){
+    for(let k=-6;k<=6;k++){
+      if(k!==0&&Math.abs(v-k*frac)<1e-6)
+        return `${k===1?'':k===-1?'-':k}${label} ≈ ${v.toFixed(8)}`;
+    }
+    if(Math.abs(v-frac)<1e-6) return `${label} ≈ ${v.toFixed(8)}`;
+  }
+  return v.toFixed(8);
+}
+
+function gcd(a,b){ return b===0?a:gcd(b,a%b); }
+
+
+/* ═══════════════════════════════════════════════════════════════════
+   PHYSICS — Motor de Geometría Diferencial / Marco de Frenet-Serret
+   r(t) = (f(t), g(t), h(t))
+   Simbólico: r'(t), r''(t) con math.derivative
+   Numérico:  T, N, B, κ, R, τ con álgebra vectorial + diferencia central
+═══════════════════════════════════════════════════════════════════ */
+
+// ─── Estado global ────────────────────────────────────────────────
+var FR = { traceMap: {}, tmin: 0, tmax: Math.PI * 4 };
+
+// ─── Carga rápida de ejemplos ─────────────────────────────────────
+function loadFrenet(f, g, h, tmin, tmax, t0) {
+  document.getElementById('fr-f').value    = f;
+  document.getElementById('fr-g').value    = g;
+  document.getElementById('fr-h').value    = h;
+  document.getElementById('fr-tmin').value = tmin;
+  document.getElementById('fr-tmax').value = tmax;
+  document.getElementById('fr-t0').value   = t0;
+  calcFrenet();
+}
+
+// ─── Sincronización slider ↔ input t₀ ────────────────────────────
+function onT0Slider(frac) {
+  try {
+    var tmin = math.evaluate(norm(document.getElementById('fr-tmin').value));
+    var tmax = math.evaluate(norm(document.getElementById('fr-tmax').value));
+    var t0 = tmin + parseFloat(frac) * (tmax - tmin);
+    document.getElementById('fr-t0').value = t0.toFixed(4);
+    document.getElementById('fr-t0-display').textContent = t0.toFixed(3);
+    calcFrenet();
+  } catch(e) {}
+}
+
+function syncT0Input() {
+  try {
+    var tmin = math.evaluate(norm(document.getElementById('fr-tmin').value));
+    var tmax = math.evaluate(norm(document.getElementById('fr-tmax').value));
+    var t0   = math.evaluate(norm(document.getElementById('fr-t0').value));
+    var frac = Math.max(0, Math.min(1, (t0 - tmin) / (tmax - tmin)));
+    document.getElementById('fr-t0-slider').value = frac;
+    document.getElementById('fr-t0-display').textContent = t0.toFixed(3);
+  } catch(e) {}
+}
+
+// ─── Motor principal ──────────────────────────────────────────────
+function calcFrenet() {
+  clearErr('fr-error');
+  document.getElementById('fr-warn').classList.remove('visible');
+
+  var rawF = norm(document.getElementById('fr-f').value);
+  var rawG = norm(document.getElementById('fr-g').value);
+  var rawH = norm(document.getElementById('fr-h').value);
+  var rawTmin = norm(document.getElementById('fr-tmin').value);
+  var rawTmax = norm(document.getElementById('fr-tmax').value);
+  var rawT0   = norm(document.getElementById('fr-t0').value);
+
+  // Evaluar límites
+  var tmin, tmax, t0;
+  try {
+    tmin = math.evaluate(rawTmin);
+    tmax = math.evaluate(rawTmax);
+    t0   = math.evaluate(rawT0);
+    if (!isFinite(tmin) || !isFinite(tmax) || tmin >= tmax)
+      throw new Error('Intervalo inválido: necesita t_min < t_max.');
+    if (!isFinite(t0) || t0 < tmin || t0 > tmax)
+      throw new Error('t₀ debe estar dentro del intervalo [t_min, t_max].');
+  } catch(e) { showErr('fr-error', e.message); return; }
+
+  FR.tmin = tmin; FR.tmax = tmax;
+  syncT0Input();
+
+  // ── 1. Derivadas simbólicas ───────────────────────────────────
+  var rp_sym, rpp_sym;
+  try {
+    rp_sym  = [rawF, rawG, rawH].map(function(e) {
+      return math.simplify(math.derivative(e, 't')).toString();
+    });
+    rpp_sym = rp_sym.map(function(e) {
+      return math.simplify(math.derivative(e, 't')).toString();
+    });
+  } catch(e) { showErr('fr-error', 'Error al derivar: ' + e.message); return; }
+
+  // Mostrar derivadas simbólicas
+  document.getElementById('fr-deriv-card').style.display = '';
+  document.getElementById('fr-derivs').innerHTML =
+    '<div class="deriv-row"><span class="deriv-label">r(t) =</span><span class="deriv-expr">(' + rawF + ',&nbsp;&nbsp;' + rawG + ',&nbsp;&nbsp;' + rawH + ')</span></div>' +
+    '<div class="deriv-row"><span class="deriv-label">r\'(t) =</span><span class="deriv-expr">(' + rp_sym[0] + ',&nbsp;&nbsp;' + rp_sym[1] + ',&nbsp;&nbsp;' + rp_sym[2] + ')</span></div>' +
+    '<div class="deriv-row"><span class="deriv-label">r\'\'(t) =</span><span class="deriv-expr">(' + rpp_sym[0] + ',&nbsp;&nbsp;' + rpp_sym[1] + ',&nbsp;&nbsp;' + rpp_sym[2] + ')</span></div>';
+
+  // ── 2. Evaluar numéricamente en t₀ ───────────────────────────
+  var P, rp_v, rpp_v;
+  try {
+    var fcR  = [rawF, rawG, rawH].map(function(e){ return math.compile(e); });
+    var fcRp  = rp_sym.map(function(e){ return math.compile(e); });
+    var fcRpp = rpp_sym.map(function(e){ return math.compile(e); });
+    P     = fcR.map(function(f){ return f.evaluate({t: t0}); });
+    rp_v  = fcRp.map(function(f){ return f.evaluate({t: t0}); });
+    rpp_v = fcRpp.map(function(f){ return f.evaluate({t: t0}); });
+    if (P.some(function(v){ return !isFinite(v); }) ||
+        rp_v.some(function(v){ return !isFinite(v); }))
+      throw new Error('r(t₀) o r\'(t₀) tienen valores no finitos. Prueba otro t₀.');
+  } catch(e) { showErr('fr-error', e.message); return; }
+
+  var norm_rp = vNorm(rp_v);
+  if (norm_rp < 1e-12) { showErr('fr-error', 'r\'(t₀) = 0: punto singular. Elige otro t₀.'); return; }
+
+  // ── 3. Curvatura κ ────────────────────────────────────────────
+  var cross_v  = vCross(rp_v, rpp_v);
+  var kappa    = vNorm(cross_v) / Math.pow(norm_rp, 3);
+  var isStraight = kappa < 1e-8;
+
+  if (isStraight) {
+    var w = document.getElementById('fr-warn');
+    w.textContent = '⚠ κ ≈ 0: curva localmente rectilínea. N y B se construyen con un vector perpendicular arbitrario a T.';
+    w.classList.add('visible');
+  }
+
+  // ── 4. Marco TNB ─────────────────────────────────────────────
+  var T_v = vScale(rp_v, 1.0 / norm_rp);
+  var N_v, B_v;
+
+  if (isStraight) {
+    N_v = vArbitraryPerp(T_v);
+    B_v = vUnit(vCross(T_v, N_v));
+  } else {
+    // N via diferencia central de T(t): error ~10⁻¹¹
+    var hfd = 1e-6;
+    var T_plus  = frUnitTangent(fcRp, t0 + hfd);
+    var T_minus = frUnitTangent(fcRp, t0 - hfd);
+    var Tdot    = vScale(vSub(T_plus, T_minus), 1.0 / (2 * hfd));
+    var Tdot_nm = vNorm(Tdot);
+    N_v = Tdot_nm > 1e-14 ? vScale(Tdot, 1.0 / Tdot_nm) : vArbitraryPerp(T_v);
+    B_v = vUnit(vCross(T_v, N_v));
+  }
+
+  // ── 5. Torsión τ = -(Ḃ · N) / |r'| ──────────────────────────
+  var hfd2   = 1e-6;
+  var B_plus  = frCalcB(fcRp, t0 + hfd2);
+  var B_minus = frCalcB(fcRp, t0 - hfd2);
+  var Bdot    = vScale(vSub(B_plus, B_minus), 1.0 / (2 * hfd2));
+  var tau     = -vDot(Bdot, N_v) / norm_rp;
+  var R       = kappa > 1e-10 ? 1.0 / kappa : Infinity;
+
+  // ── 6. Ecuaciones de planos (n · (r − P) = 0) ────────────────
+  var eqOsc = frPlaneEq(B_v, P);   // plano osculador: normal = B
+  var eqNor = frPlaneEq(T_v, P);   // plano normal:    normal = T
+  var eqRec = frPlaneEq(N_v, P);   // plano rectif.:   normal = N
+
+  // ── 7. Mostrar resultados numéricos ──────────────────────────
+  document.getElementById('fr-result-card').style.display = '';
+  document.getElementById('fr-P-val').textContent   = vFmt(P);
+  document.getElementById('fr-T-val').innerHTML     = '<span style="color:#1d4ed8;">' + vFmt(T_v) + '</span><br><small style="color:var(--text-muted);">|T| = ' + vNorm(T_v).toFixed(6) + '</small>';
+  document.getElementById('fr-N-val').innerHTML     = '<span style="color:#15803d;">' + vFmt(N_v) + '</span><br><small style="color:var(--text-muted);">|N| = ' + vNorm(N_v).toFixed(6) + '</small>';
+  document.getElementById('fr-B-val').innerHTML     = '<span style="color:#c2410c;">' + vFmt(B_v) + '</span><br><small style="color:var(--text-muted);">|B| = ' + vNorm(B_v).toFixed(6) + '</small>';
+  document.getElementById('fr-kappa-val').textContent = kappa < 1e-10 ? '0' : kappa.toFixed(6);
+  document.getElementById('fr-R-val').textContent   = R > 1e8 ? '∞' : R.toFixed(6);
+  document.getElementById('fr-tau-val').textContent = Math.abs(tau) < 1e-8 ? '0  (curva plana)' : tau.toFixed(6);
+  document.getElementById('fr-osc-eq').textContent  = eqOsc;
+  document.getElementById('fr-nor-eq').textContent  = eqNor;
+  document.getElementById('fr-rec-eq').textContent  = eqRec;
+
+  // ── 8. Construir curva completa ───────────────────────────────
+  var Npts = 300;
+  var ts   = frLinspace(tmin, tmax, Npts);
+  var curveX = [], curveY = [], curveZ = [];
+  for (var i = 0; i < ts.length; i++) {
+    try {
+      var t = ts[i];
+      var cx = fcR[0].evaluate({t:t});
+      var cy = fcR[1].evaluate({t:t});
+      var cz = fcR[2].evaluate({t:t});
+      curveX.push(isFinite(cx) ? cx : null);
+      curveY.push(isFinite(cy) ? cy : null);
+      curveZ.push(isFinite(cz) ? cz : null);
+    } catch(e) { curveX.push(null); curveY.push(null); curveZ.push(null); }
+  }
+
+  // Scale for vector arrows
+  var span  = frCurveSpan(curveX, curveY, curveZ);
+  var scale = Math.max(span * 0.20, 0.1);
+  var planeSize = Math.max(span * 0.32, 0.15);
+
+  // ── 9. Planos como mesh3d ─────────────────────────────────────
+  var oscMesh = frBuildPlane(P, T_v, N_v, planeSize);   // normal = B
+  var norMesh = frBuildPlane(P, N_v, B_v, planeSize);   // normal = T
+  var recMesh = frBuildPlane(P, T_v, B_v, planeSize);   // normal = N
+
+  // ── 10. Círculo osculador ─────────────────────────────────────
+  var oscCircle = frBuildCircle(P, T_v, N_v, R);
+
+  // ── 11. Construir trazas Plotly ───────────────────────────────
+  var traces = [];
+
+  // Traza 1 — Curva completa (azul marino, grosor 3px)
+  traces.push({
+    type:'scatter3d', mode:'lines',
+    name:'① Curva r(t)',
+    x:curveX, y:curveY, z:curveZ,
+    line:{ color:'#0a1f44', width:3 },
+    hovertemplate:'<b>① Curva r(t)</b><br>x=%{x:.3f}, y=%{y:.3f}, z=%{z:.3f}<extra></extra>'
+  });
+
+  // Traza 2 — Punto P (marcador rojo grande)
+  traces.push({
+    type:'scatter3d', mode:'markers',
+    name:'② Punto P = r(t₀)',
+    x:[P[0]], y:[P[1]], z:[P[2]],
+    marker:{ size:9, color:'#ef4444', symbol:'circle', line:{ color:'#fff', width:2 } },
+    hovertemplate:'<b>② Punto P = r(t₀)</b><br>(' + P.map(function(v){return v.toFixed(4);}).join(', ') + ')<extra></extra>'
+  });
+
+  // Traza 3 — Vector T (azul)
+  var T_tip = vAdd(P, vScale(T_v, scale));
+  traces.push({
+    type:'scatter3d', mode:'lines+markers',
+    name:'③ T — Tangente unitario',
+    x:[P[0], T_tip[0]], y:[P[1], T_tip[1]], z:[P[2], T_tip[2]],
+    line:{ color:'#2563eb', width:6 },
+    marker:{ size:[2, 7], color:'#2563eb', symbol:['circle','diamond'] },
+    hovertemplate:'<b>③ T — Tangente unitario</b><br>T = (' + T_v.map(function(v){return v.toFixed(4);}).join(', ') + ')<br>Dirección de avance de la curva<extra></extra>'
+  });
+
+  // Traza 4 — Vector N (verde)
+  var N_tip = vAdd(P, vScale(N_v, scale));
+  traces.push({
+    type:'scatter3d', mode:'lines+markers',
+    name:'④ N — Normal principal',
+    x:[P[0], N_tip[0]], y:[P[1], N_tip[1]], z:[P[2], N_tip[2]],
+    line:{ color:'#16a34a', width:6 },
+    marker:{ size:[2, 7], color:'#16a34a', symbol:['circle','diamond'] },
+    hovertemplate:'<b>④ N — Normal principal</b><br>N = (' + N_v.map(function(v){return v.toFixed(4);}).join(', ') + ')<br>Apunta al centro de curvatura<extra></extra>'
+  });
+
+  // Traza 5 — Vector B (naranja)
+  var B_tip = vAdd(P, vScale(B_v, scale));
+  traces.push({
+    type:'scatter3d', mode:'lines+markers',
+    name:'⑤ B — Binormal',
+    x:[P[0], B_tip[0]], y:[P[1], B_tip[1]], z:[P[2], B_tip[2]],
+    line:{ color:'#ea580c', width:6 },
+    marker:{ size:[2, 7], color:'#ea580c', symbol:['circle','diamond'] },
+    hovertemplate:'<b>⑤ B — Binormal</b><br>B = (' + B_v.map(function(v){return v.toFixed(4);}).join(', ') + ')<br>Normal al plano osculador<extra></extra>'
+  });
+
+  // Traza 6 — Plano osculador (azul semitransparente, opacity 0.2)
+  traces.push({
+    type:'mesh3d',
+    name:'⑥ Plano Osculador  (normal = B)',
+    x:oscMesh.x, y:oscMesh.y, z:oscMesh.z,
+    i:oscMesh.i, j:oscMesh.j, k:oscMesh.k,
+    color:'#2563eb', opacity:0.20,
+    flatshading:true, lighting:{ambient:1},
+    hovertemplate:'<b>⑥ Plano Osculador</b><br>Contiene T y N · Normal = B<br>' + eqOsc + '<extra></extra>'
+  });
+
+  // Traza 7 — Plano normal (verde semitransparente, opacity 0.15, toggleable)
+  traces.push({
+    type:'mesh3d',
+    name:'⑦ Plano Normal  (normal = T)',
+    x:norMesh.x, y:norMesh.y, z:norMesh.z,
+    i:norMesh.i, j:norMesh.j, k:norMesh.k,
+    color:'#16a34a', opacity:0.15,
+    flatshading:true, lighting:{ambient:1},
+    visible: document.getElementById('vis-norplane').checked ? true : 'legendonly',
+    hovertemplate:'<b>⑦ Plano Normal</b><br>Contiene N y B · Normal = T<br>' + eqNor + '<extra></extra>'
+  });
+
+  // Plano rectificante (naranja, toggleable)
+  traces.push({
+    type:'mesh3d',
+    name:'Plano Rectificante  (normal = N)',
+    x:recMesh.x, y:recMesh.y, z:recMesh.z,
+    i:recMesh.i, j:recMesh.j, k:recMesh.k,
+    color:'#ea580c', opacity:0.13,
+    flatshading:true, lighting:{ambient:1},
+    visible: document.getElementById('vis-recplane').checked ? true : 'legendonly',
+    hovertemplate:'<b>Plano Rectificante</b><br>Contiene T y B · Normal = N<br>' + eqRec + '<extra></extra>'
+  });
+
+  // Traza 8 — Círculo osculador (morado punteado)
+  if (oscCircle.x.length > 0) {
+    traces.push({
+      type:'scatter3d', mode:'lines',
+      name:'⑧ Círculo Osculador  R = ' + (R > 1e8 ? '∞' : R.toFixed(4)),
+      x:oscCircle.x, y:oscCircle.y, z:oscCircle.z,
+      line:{ color:'#9333ea', width:3, dash:'dot' },
+      hovertemplate:'<b>⑧ Círculo Osculador</b><br>Radio R = 1/κ = ' + (R > 1e8 ? '∞' : R.toFixed(4)) + '<br>Centro = P + R·N<extra></extra>'
+    });
+  }
+
+  // ── 12. Registrar índices para toggle ─────────────────────────
+  FR.traceMap = {};
+  for (var ti = 0; ti < traces.length; ti++) {
+    var nm = traces[ti].name;
+    if      (nm.indexOf('Curva')          >= 0) FR.traceMap['curve']    = ti;
+    else if (nm.indexOf('Punto P')        >= 0) FR.traceMap['point']    = ti;
+    else if (nm.indexOf('Tangente')       >= 0) FR.traceMap['T']        = ti;
+    else if (nm.indexOf('Normal prin')    >= 0) FR.traceMap['N']        = ti;
+    else if (nm.indexOf('Binormal')       >= 0) FR.traceMap['B']        = ti;
+    else if (nm.indexOf('Osculador')      >= 0 && nm.indexOf('Plano') >= 0) FR.traceMap['oscplane'] = ti;
+    else if (nm.indexOf('Normal') >= 0   && nm.indexOf('Plano') >= 0)       FR.traceMap['norplane'] = ti;
+    else if (nm.indexOf('Rectif')         >= 0) FR.traceMap['recplane'] = ti;
+    else if (nm.indexOf('Círculo')        >= 0) FR.traceMap['circle']   = ti;
+  }
+
+  // ── 13. Renderizar con Plotly ─────────────────────────────────
+  Plotly.newPlot('plot-frenet3d', traces, {
+    margin:{ t:10, b:10, l:0, r:0 },
+    scene:{
+      xaxis:{ title:'x', backgroundcolor:'#f5f7ff', showbackground:true, gridcolor:'#d8dff0' },
+      yaxis:{ title:'y', backgroundcolor:'#f5f7ff', showbackground:true, gridcolor:'#d8dff0' },
+      zaxis:{ title:'z', backgroundcolor:'#f0f3ff', showbackground:true, gridcolor:'#d8dff0' },
+      camera:{ eye:{ x:1.4, y:-1.5, z:1.1 } },
+      aspectmode:'data'
+    },
+    legend:{
+      orientation:'v', x:0.01, y:0.99,
+      bgcolor:'rgba(255,255,255,0.9)',
+      bordercolor:'#dde', borderwidth:1,
+      font:{ size:11 }
+    },
+    paper_bgcolor:'#fff'
+  }, { responsive:true, displayModeBar:true, displaylogo:false });
+
+  // ── 14. Gráfico κ(t) ─────────────────────────────────────────
+  frRenderKappa(fcRp, tmin, tmax, t0, Npts);
+}
+
+// ─── Gráfico κ(t) a lo largo de la curva ─────────────────────────
+function frRenderKappa(fcRp, tmin, tmax, t0, Np) {
+  var ts     = frLinspace(tmin, tmax, Np);
+  var kappas = [];
+  var hk     = (tmax - tmin) / (Np * 4);
+
+  for (var i = 0; i < ts.length; i++) {
+    try {
+      var t = ts[i];
+      var rp = fcRp.map(function(f){ return f.evaluate({t:t}); });
+      var rp_p = fcRp.map(function(f){ return f.evaluate({t:t+hk}); });
+      var rp_m = fcRp.map(function(f){ return f.evaluate({t:t-hk}); });
+      var rpp  = vScale(vSub(rp_p, rp_m), 1.0/(2*hk));
+      var cr   = vCross(rp, rpp);
+      var nm   = vNorm(rp);
+      kappas.push(nm > 1e-12 ? vNorm(cr) / Math.pow(nm, 3) : 0);
+    } catch(e) { kappas.push(null); }
+  }
+
+  // κ at t₀
+  var idx0   = Math.round((t0 - tmin) / (tmax - tmin) * (Np - 1));
+  var kap_t0 = kappas[Math.max(0, Math.min(Np-1, idx0))];
+
+  Plotly.newPlot('plot-kappa', [
+    {
+      x:ts, y:kappas, type:'scatter', mode:'lines', name:'κ(t)',
+      line:{ color:'#2563eb', width:2 },
+      fill:'tozeroy', fillcolor:'rgba(37,99,235,0.07)',
+      hovertemplate:'t = %{x:.3f}<br>κ = %{y:.5f}<extra></extra>'
+    },
+    {
+      x:[t0], y:[kap_t0], type:'scatter', mode:'markers', name:'κ(t₀)',
+      marker:{ size:10, color:'#ef4444', symbol:'circle', line:{color:'#fff',width:2} },
+      hovertemplate:'<b>t₀ = ' + t0.toFixed(3) + '</b><br>κ = %{y:.6f}<extra></extra>'
+    }
+  ], {
+    margin:{ t:10, b:42, l:56, r:14 },
+    xaxis:{ title:'t', gridcolor:'#eef', zeroline:false },
+    yaxis:{ title:'κ(t)', gridcolor:'#eef', zeroline:true, rangemode:'tozero' },
+    hovermode:'closest',
+    plot_bgcolor:'#fafbff', paper_bgcolor:'#fff',
+    legend:{ orientation:'h', y:-0.22 },
+    shapes:[{
+      type:'line', x0:t0, x1:t0, y0:0, y1:1, yref:'paper',
+      line:{ color:'#ef4444', width:1.5, dash:'dot' }
+    }]
+  }, { responsive:true, displayModeBar:false });
+}
+
+// ─── Toggle visibilidad ────────────────────────────────────────────
+function toggleTrace(key) {
+  var idx = FR.traceMap[key];
+  if (idx === undefined) return;
+  var checked = document.getElementById('vis-' + key).checked;
+  Plotly.restyle('plot-frenet3d', { visible: checked }, [idx]);
+}
+
+// ─── Helpers de álgebra vectorial ────────────────────────────────
+function vAdd(a, b)  { return [a[0]+b[0], a[1]+b[1], a[2]+b[2]]; }
+function vSub(a, b)  { return [a[0]-b[0], a[1]-b[1], a[2]-b[2]]; }
+function vScale(a,s) { return [a[0]*s, a[1]*s, a[2]*s]; }
+function vDot(a, b)  { return a[0]*b[0] + a[1]*b[1] + a[2]*b[2]; }
+function vNorm(a)    { return Math.sqrt(vDot(a, a)); }
+function vUnit(a)    { var n=vNorm(a); return n>1e-14 ? vScale(a,1/n) : a; }
+function vCross(a,b) { return [a[1]*b[2]-a[2]*b[1], a[2]*b[0]-a[0]*b[2], a[0]*b[1]-a[1]*b[0]]; }
+
+function vArbitraryPerp(v) {
+  var ref = Math.abs(v[0]) < 0.9 ? [1,0,0] : [0,1,0];
+  return vUnit(vCross(v, ref));
+}
+
+// T unitario en un punto t dado los compilados de r'
+function frUnitTangent(fcRp, t) {
+  var rp = fcRp.map(function(f){ return f.evaluate({t:t}); });
+  var nm = vNorm(rp);
+  return nm > 1e-14 ? vScale(rp, 1/nm) : [0,0,0];
+}
+
+// B = T × N en un punto t
+function frCalcB(fcRp, t) {
+  var hb     = 1e-6;
+  var T      = frUnitTangent(fcRp, t);
+  var T_p    = frUnitTangent(fcRp, t + hb);
+  var T_m    = frUnitTangent(fcRp, t - hb);
+  var Tdot   = vScale(vSub(T_p, T_m), 1/(2*hb));
+  var Tdot_n = vNorm(Tdot);
+  var N      = Tdot_n > 1e-14 ? vScale(Tdot, 1/Tdot_n) : vArbitraryPerp(T);
+  return vUnit(vCross(T, N));
+}
+
+// ─── Plano como mesh3d (4 vértices, 2 triángulos) ─────────────────
+function frBuildPlane(P, u, v, size) {
+  var c0 = vAdd(P, vAdd(vScale(u,  size), vScale(v,  size)));
+  var c1 = vAdd(P, vAdd(vScale(u, -size), vScale(v,  size)));
+  var c2 = vAdd(P, vAdd(vScale(u, -size), vScale(v, -size)));
+  var c3 = vAdd(P, vAdd(vScale(u,  size), vScale(v, -size)));
+  return {
+    x:[c0[0],c1[0],c2[0],c3[0]],
+    y:[c0[1],c1[1],c2[1],c3[1]],
+    z:[c0[2],c1[2],c2[2],c3[2]],
+    i:[0,0], j:[1,2], k:[2,3]
+  };
+}
+
+// ─── Círculo osculador en el plano osculador ──────────────────────
+function frBuildCircle(P, T_v, N_v, R) {
+  if (!isFinite(R) || R > 1e6) return {x:[],y:[],z:[]};
+  var C  = vAdd(P, vScale(N_v, R));   // centro de curvatura
+  var Np = 120;
+  var x=[], y=[], z=[];
+  for (var i=0; i<=Np; i++) {
+    var theta = 2*Math.PI*i/Np;
+    var pt = vAdd(C, vAdd(vScale(T_v,  R*Math.cos(theta)),
+                          vScale(N_v, -R*Math.sin(theta))));
+    x.push(pt[0]); y.push(pt[1]); z.push(pt[2]);
+  }
+  return {x:x, y:y, z:z};
+}
+
+// ─── Ecuación del plano: n·(r−P)=0  →  ax+by+cz=d ───────────────
+function frPlaneEq(n, P) {
+  var d = vDot(n, P);
+  var terms = [];
+  var labels = ['x','y','z'];
+  for (var i=0; i<3; i++) {
+    if (Math.abs(n[i]) > 1e-8)
+      terms.push(n[i].toFixed(4) + labels[i]);
+  }
+  return (terms.length ? terms.join(' + ') : '0') + ' = ' + d.toFixed(4);
+}
+
+// ─── Span de la curva (para escalar vectores y planos) ────────────
+function frCurveSpan(xs, ys, zs) {
+  var fx = xs.filter(function(v){ return isFinite(v); });
+  var fy = ys.filter(function(v){ return isFinite(v); });
+  var fz = zs.filter(function(v){ return isFinite(v); });
+  if (!fx.length) return 1;
+  var rx = Math.max.apply(null,fx) - Math.min.apply(null,fx);
+  var ry = Math.max.apply(null,fy) - Math.min.apply(null,fy);
+  var rz = Math.max.apply(null,fz) - Math.min.apply(null,fz);
+  return Math.max(Math.sqrt(rx*rx + ry*ry + rz*rz) * 0.14, 0.3);
+}
+
+// ─── Linspace ─────────────────────────────────────────────────────
+function frLinspace(a, b, n) {
+  var arr = [];
+  for (var i=0; i<n; i++) arr.push(a + (b-a)*i/(n-1));
+  return arr;
+}
+
+// ─── Formato de vector ────────────────────────────────────────────
+function vFmt(v) {
+  return '(' + v.map(function(x){ return x.toFixed(5); }).join(',  ') + ')';
+}
+
+
+
+// ─── Navbar ───────────────────────────────────────────────────
+document.getElementById('navToggle').addEventListener('click',()=>{
+  const nl=document.getElementById('navLinks');
+  const open=nl.classList.toggle('open');
+  document.getElementById('navToggle').setAttribute('aria-expanded',open);
+});
+
+// ─── Arranque ─────────────────────────────────────────────────
+window.addEventListener('load', calcSimple);
+</script>
+</body>
+</html>

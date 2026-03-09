@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Álgebra Lineal — Gauss-Jordan | PHYSICS</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #2563EB;
+            --dark: #0F172A;
+            --bg: #F8FAFC;
+            --card: #FFFFFF;
+            --border: #E2E8F0;
+            --text: #334155;
+            --step-bg: #F1F5F9;
+        }
+
+        body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 20px; line-height: 1.5; }
+        .container { max-width: 1200px; margin: 0 auto; }
+        
+        header { text-align: center; margin-bottom: 30px; }
+        h1 { font-weight: 800; color: var(--dark); margin: 0; }
+        .back-link { color: var(--primary); text-decoration: none; font-weight: 600; font-size: 0.9rem; }
+
+        .config-panel { background: var(--card); padding: 20px; border-radius: 12px; border: 1px solid var(--border); margin-bottom: 20px; display: flex; align-items: center; gap: 20px; }
+        select { padding: 8px 12px; border-radius: 6px; border: 1px solid var(--border); font-size: 1rem; cursor: pointer; }
+
+        .main-layout { display: grid; grid-template-columns: 1fr 350px; gap: 20px; }
+        .card { background: var(--card); padding: 25px; border-radius: 12px; border: 1px solid var(--border); box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); margin-bottom: 20px; }
+
+        /* Matriz de Entrada */
+        .matrix-container { display: flex; align-items: center; gap: 15px; overflow-x: auto; padding-bottom: 10px; }
+        .matrix-grid { display: grid; gap: 8px; }
+        .vector-column { display: grid; gap: 8px; border-left: 2px solid var(--border); padding-left: 15px; }
+        input { width: 60px; height: 40px; text-align: center; border: 1px solid var(--border); border-radius: 4px; font-size: 0.9rem; transition: border-color 0.2s; }
+        input:focus { outline: none; border-color: var(--primary); background: #EFF6FF; }
+
+        /* Resultados */
+        .res-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 15px; }
+        .res-box { padding: 15px; background: #F8FAFC; border-radius: 8px; border: 1px solid var(--border); }
+        .res-label { font-size: 0.75rem; font-weight: 700; color: #64748B; text-transform: uppercase; display: block; margin-bottom: 5px; }
+        .res-value { font-size: 1.1rem; font-weight: 700; color: var(--primary); }
+
+        /* Pasos Gauss-Jordan */
+        .steps-container { margin-top: 30px; }
+        .step-block { background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 15px; margin-bottom: 15px; }
+        .step-header { font-weight: 700; color: var(--primary); margin-bottom: 10px; display: block; }
+        .step-op { font-style: italic; color: #475569; margin-bottom: 10px; font-size: 0.9rem; }
+        .step-matrix { border-collapse: collapse; font-family: monospace; font-size: 0.9rem; }
+        .step-matrix td { padding: 5px 10px; border: 1px solid #E2E8F0; text-align: center; min-width: 50px; }
+        .step-matrix td:last-child { border-left: 2px solid var(--primary); background: #F8FAFC; }
+
+        .theory-section { margin-top: 40px; border-top: 2px solid var(--border); padding-top: 20px; }
+        .theory-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; font-size: 0.9rem; }
+
+        @media (max-width: 900px) { .main-layout { grid-template-columns: 1fr; } }
+    </style>
+  <meta name="description" content="Solucionador de sistemas lineales Ax=B con método Gauss-Jordan paso a paso, determinante y matriz inversa.">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚙️</text></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="style.css">
+</head>
+  <nav class="nav-physics" role="navigation" aria-label="Navegación principal">
+    <div class="container nav-inner">
+      <a href="index.html" class="nav-logo">PHYSICS<span>.</span></a>
+      <button class="nav-toggle" id="navToggle" aria-expanded="false" aria-controls="navLinks" aria-label="Abrir menú">
+        <span></span><span></span><span></span>
+      </button>
+      <ul class="nav-links" id="navLinks" role="list">
+        <li><a href="index.html">Inicio</a></li>
+        <li><a href="index.html#cursos" class="nav-active">Asignaturas</a></li>
+        <li><a href="calculadora.html">Calculadora</a></li>
+        <li><a href="index.html#contacto">Contacto</a></li>
+      </ul>
+      <a href="https://wa.me/593995324419" target="_blank" class="btn btn-primary btn-sm nav-cta" rel="noopener">Reservar clase</a>
+    </div>
+  </nav>TYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Álgebra Lineal — Gauss-Jordan | PHYSICS</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #2563EB;
+            --dark: #0F172A;
+            --bg: #F8FAFC;
+            --card: #FFFFFF;
+            --border: #E2E8F0;
+            --text: #334155;
+            --step-bg: #F1F5F9;
+        }
+
+        body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 20px; line-height: 1.5; }
+        .container { max-width: 1200px; margin: 0 auto; }
+        
+        header { text-align: center; margin-bottom: 30px; }
+        h1 { font-weight: 800; color: var(--dark); margin: 0; }
+        .back-link { color: var(--primary); text-decoration: none; font-weight: 600; font-size: 0.9rem; }
+
+        .config-panel { background: var(--card); padding: 20px; border-radius: 12px; border: 1px solid var(--border); margin-bottom: 20px; display: flex; align-items: center; gap: 20px; }
+        select { padding: 8px 12px; border-radius: 6px; border: 1px solid var(--border); font-size: 1rem; cursor: pointer; }
+
+        .main-layout { display: grid; grid-template-columns: 1fr 350px; gap: 20px; }
+        .card { background: var(--card); padding: 25px; border-radius: 12px; border: 1px solid var(--border); box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); margin-bottom: 20px; }
+
+        /* Matriz de Entrada */
+        .matrix-container { display: flex; align-items: center; gap: 15px; overflow-x: auto; padding-bottom: 10px; }
+        .matrix-grid { display: grid; gap: 8px; }
+        .vector-column { display: grid; gap: 8px; border-left: 2px solid var(--border); padding-left: 15px; }
+        input { width: 60px; height: 40px; text-align: center; border: 1px solid var(--border); border-radius: 4px; font-size: 0.9rem; transition: border-color 0.2s; }
+        input:focus { outline: none; border-color: var(--primary); background: #EFF6FF; }
+
+        /* Resultados */
+        .res-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 15px; }
+        .res-box { padding: 15px; background: #F8FAFC; border-radius: 8px; border: 1px solid var(--border); }
+        .res-label { font-size: 0.75rem; font-weight: 700; color: #64748B; text-transform: uppercase; display: block; margin-bottom: 5px; }
+        .res-value { font-size: 1.1rem; font-weight: 700; color: var(--primary); }
+
+        /* Pasos Gauss-Jordan */
+        .steps-container { margin-top: 30px; }
+        .step-block { background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 15px; margin-bottom: 15px; }
+        .step-header { font-weight: 700; color: var(--primary); margin-bottom: 10px; display: block; }
+        .step-op { font-style: italic; color: #475569; margin-bottom: 10px; font-size: 0.9rem; }
+        .step-matrix { border-collapse: collapse; font-family: monospace; font-size: 0.9rem; }
+        .step-matrix td { padding: 5px 10px; border: 1px solid #E2E8F0; text-align: center; min-width: 50px; }
+        .step-matrix td:last-child { border-left: 2px solid var(--primary); background: #F8FAFC; }
+
+        .theory-section { margin-top: 40px; border-top: 2px solid var(--border); padding-top: 20px; }
+        .theory-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; font-size: 0.9rem; }
+
+        @media (max-width: 900px) { .main-layout { grid-template-columns: 1fr; } }
+    </style>
+  <meta name="description" content="Solucionador de sistemas lineales Ax=B con método Gauss-Jordan paso a paso, determinante y matriz inversa.">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚙️</text></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="container">
+    <header>
+        <a href="index.html" class="back-link">← Volver a PHYSICS</a>
+        <h1>Solucionador Gauss-Jordan A·x = B</h1>
+    </header>
+
+    <div class="config-panel">
+        <label for="dim-select">Dimensión del sistema (n x n):</label>
+        <select id="dim-select" onchange="initSystem()">
+            <option value="2">2 x 2</option>
+            <option value="3">3 x 3</option>
+            <option value="4">4 x 4</option>
+        </select>
+        <small style="color: #64748B;">Se recalcula automáticamente al escribir.</small>
+    </div>
+
+    <div class="main-layout">
+        <div class="left-col">
+            <div class="card">
+                <h3>Ingrese los Coeficientes</h3>
+                <div class="matrix-container" id="matrix-input-container">
+                    </div>
+            </div>
+
+            <div class="steps-container" id="steps-output">
+                </div>
+        </div>
+
+        <div class="right-col">
+            <div class="card">
+                <h3>Análisis del Sistema</h3>
+                <div id="quick-results">
+                    </div>
+            </div>
+
+            <div class="card">
+                <h3>Solución Vectorial</h3>
+                <div id="vector-solution">
+                    </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="theory-section">
+        <h3>📘 Conceptos Clave</h3>
+        <div class="theory-grid">
+            <div>
+                <strong>Determinante y Rango:</strong> El determinante indica si una matriz tiene inversa. El rango es el número de filas independientes tras la reducción. Si Rango(A) < n, el sistema no tiene solución única.
+            </div>
+            <div>
+                <strong>Método de Gauss-Jordan:</strong> Consiste en aplicar operaciones de fila (intercambio, escalamiento y sustitución) para transformar [A|B] en [I|x].
+            </div>
+            <div>
+                <strong>Tipos de Solución:</strong> Determinado (única), Indeterminado (infinitas) o Incompatible (sin solución si aparece una fila 0 = constante).
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    let n = 2;
+    const TOLERANCIA = 1e-10;
+
+    function initSystem() {
+        n = parseInt(document.getElementById('dim-select').value);
+        renderInputs();
+        calculate();
+    }
+
+    function renderInputs() {
+        const container = document.getElementById('matrix-input-container');
+        container.innerHTML = '';
+
+        const gridA = document.createElement('div');
+        gridA.className = 'matrix-grid';
+        gridA.style.gridTemplateColumns = `repeat(${n}, 1fr)`;
+
+        // Valores por defecto según requerimiento
+        const defaultsA = {
+            2: [[2, 1], [1, 3]],
+            3: [[3, 1, -1], [1, 4, 1], [2, 1, 2]],
+            4: [[4, 1, 0, 0], [1, 4, 1, 0], [0, 1, 4, 1], [0, 0, 1, 4]]
+        };
+        const defaultsB = { 2: [5, 6], 3: [2, 3, 5], 4: [5, 5, 5, 5] };
+
+        for (let i = 0; i < n; i++) {
+            for (let j = 0; j < n; j++) {
+                const input = document.createElement('input');
+                input.type = 'number';
+                input.id = `a-${i}-${j}`;
+                input.value = defaultsA[n][i][j];
+                input.step = "any";
+                input.oninput = calculate;
+                gridA.appendChild(input);
+            }
+        }
+
+        const colB = document.createElement('div');
+        colB.className = 'vector-column';
+        for (let i = 0; i < n; i++) {
+            const input = document.createElement('input');
+            input.type = 'number';
+            input.id = `b-${i}`;
+            input.value = defaultsB[n][i];
+            input.step = "any";
+            input.oninput = calculate;
+            colB.appendChild(input);
+        }
+
+        container.appendChild(gridA);
+        container.appendChild(colB);
+    }
+
+    function calculate() {
+        let A = [];
+        let B = [];
+        for (let i = 0; i < n; i++) {
+            A[i] = [];
+            for (let j = 0; j < n; j++) {
+                A[i][j] = parseFloat(document.getElementById(`a-${i}-${j}`).value) || 0;
+            }
+            B[i] = parseFloat(document.getElementById(`b-${i}`).value) || 0;
+        }
+
+        const det = getDeterminant(A);
+        const steps = [];
+        const result = solveGaussJordan(A, B, steps);
+        
+        renderAnalysis(det, result.rango, result.inversa);
+        renderSolution(result);
+        renderSteps(steps);
+    }
+
+    function getDeterminant(matrix) {
+        let tmp = matrix.map(row => [...row]);
+        let d = 1;
+        let sign = 1;
+        for (let i = 0; i < n; i++) {
+            let pivot = i;
+            for (let j = i + 1; j < n; j++) {
+                if (Math.abs(tmp[j][i]) > Math.abs(tmp[pivot][i])) pivot = j;
+            }
+            if (Math.abs(tmp[pivot][i]) < TOLERANCIA) return 0;
+            if (pivot !== i) {
+                [tmp[i], tmp[pivot]] = [tmp[pivot], tmp[i]];
+                sign *= -1;
+            }
+            d *= tmp[i][i];
+            for (let j = i + 1; j < n; j++) {
+                let factor = tmp[j][i] / tmp[i][i];
+                for (let k = i + 1; k < n; k++) tmp[j][k] -= factor * tmp[i][k];
+            }
+        }
+        return d * sign;
+    }
+
+    function solveGaussJordan(matA, vecB, steps) {
+        let M = matA.map((row, i) => [...row, vecB[i]]);
+        let inv = Array.from({length: n}, (_, i) => Array.from({length: n}, (_, j) => i === j ? 1 : 0));
+        let MI = matA.map((row, i) => [...row, ...inv[i]]);
+        
+        steps.push({ op: "Matriz aumentada inicial [A|B]", mat: M.map(r => [...r]) });
+
+        let rango = 0;
+        for (let i = 0; i < n; i++) {
+            let pivot = i;
+            for (let j = i + 1; j < n; j++) {
+                if (Math.abs(M[j][i]) > Math.abs(M[pivot][i])) pivot = j;
+            }
+
+            if (Math.abs(M[pivot][i]) > TOLERANCIA) {
+                rango++;
+                if (pivot !== i) {
+                    [M[i], M[pivot]] = [M[pivot], M[i]];
+                    [MI[i], MI[pivot]] = [MI[pivot], MI[i]];
+                    steps.push({ op: `Intercambiar Fila ${i+1} ↔ Fila ${pivot+1}`, mat: M.map(r => [...r]) });
+                }
+
+                let div = M[i][i];
+                for (let j = i; j <= n; j++) M[i][j] /= div;
+                for (let j = 0; j < 2*n; j++) MI[i][j] /= div;
+                steps.push({ op: `Escalar Fila ${i+1} (dividir entre ${div.toFixed(2)})`, mat: M.map(r => [...r]) });
+
+                for (let j = 0; j < n; j++) {
+                    if (i !== j) {
+                        let factor = M[j][i];
+                        for (let k = i; k <= n; k++) M[j][k] -= factor * M[i][k];
+                        for (let k = 0; k < 2*n; k++) MI[j][k] -= factor * MI[i][k];
+                        if(Math.abs(factor) > TOLERANCIA)
+                            steps.push({ op: `Fila ${j+1} = Fila ${j+1} - (${factor.toFixed(2)}) * Fila ${i+1}`, mat: M.map(r => [...r]) });
+                    }
+                }
+            }
+        }
+
+        // Determinar tipo de solución
+        let incompatible = false;
+        for (let i = 0; i < n; i++) {
+            let allZeros = true;
+            for (let j = 0; j < n; j++) if (Math.abs(M[i][j]) > TOLERANCIA) allZeros = false;
+            if (allZeros && Math.abs(M[i][n]) > TOLERANCIA) incompatible = true;
+        }
+
+        let solutionType = incompatible ? "Incompatible" : (rango < n ? "Compatible Indeterminado" : "Compatible Determinado");
+        let x = incompatible ? null : M.map(row => row[n]);
+        let inversa = (rango === n) ? MI.map(row => row.slice(n)) : null;
+
+        return { x, solutionType, rango, inversa };
+    }
+
+    function renderAnalysis(det, rango, inversa) {
+        const container = document.getElementById('quick-results');
+        let invHTML = inversa ? '<table style="font-size:0.8rem; margin-top:10px; border-collapse:collapse;">' + 
+            inversa.map(r => `<tr>${r.map(v => `<td style="border:1px solid #ddd; padding:2px;">${v.toFixed(2)}</td>`).join('')}</tr>`).join('') + '</table>' 
+            : '<span style="color:red; font-size:0.8rem;">Singular (Sin Inversa)</span>';
+
+        container.innerHTML = `
+            <div class="res-grid">
+                <div class="res-box"><span class="res-label">Determinante</span><span class="res-value">${det.toFixed(2)}</span></div>
+                <div class="res-box"><span class="res-label">Rango(A)</span><span class="res-value">${rango}</span></div>
+            </div>
+            <div class="res-box" style="margin-top:15px;"><span class="res-label">Matriz Inversa</span>${invHTML}</div>
+        `;
+    }
+
+    function renderSolution(res) {
+        const container = document.getElementById('vector-solution');
+        let color = res.solutionType === "Compatible Determinado" ? "var(--primary)" : "red";
+        let content = `<div style="font-weight:800; color:${color}; margin-bottom:10px;">${res.solutionType}</div>`;
+        
+        if (res.x && res.solutionType === "Compatible Determinado") {
+            res.x.forEach((val, i) => {
+                content += `<div class="res-item"><span>x<sub>${i+1}</sub> =</span><span class="res-val">${val.toFixed(2)}</span></div>`;
+            });
+        } else if (res.solutionType === "Compatible Indeterminado") {
+            content += `<p style="font-size:0.85rem;">Existen infinitas soluciones. El sistema tiene grados de libertad.</p>`;
+        } else {
+            content += `<p style="font-size:0.85rem;">No existe ningún conjunto de valores que satisfaga las ecuaciones simultáneamente.</p>`;
+        }
+        container.innerHTML = content;
+    }
+
+    function renderSteps(steps) {
+        const container = document.getElementById('steps-output');
+        container.innerHTML = '<h3>Procedimiento Paso a Paso</h3>';
+        steps.forEach((step, index) => {
+            const div = document.createElement('div');
+            div.className = 'step-block';
+            div.innerHTML = `
+                <span class="step-header">Paso ${index + 1}</span>
+                <div class="step-op">${step.op}</div>
+                <table class="step-matrix">
+                    ${step.mat.map(row => `<tr>${row.map(val => `<td>${val.toFixed(2)}</td>`).join('')}</tr>`).join('')}
+                </table>
+            `;
+            container.appendChild(div);
+        });
+    }
+
+    // Inicio
+    window.onload = initSystem;
+</script>
+<footer class="footer-mini"><a href="index.html">← Volver a PHYSICS</a> &nbsp;·&nbsp; © 2026 PHYSICS — Quito, Ecuador</footer>
+<script>
+document.getElementById("navToggle").addEventListener("click",()=>{
+  const nl=document.getElementById("navLinks");
+  const open=nl.classList.toggle("open");
+  document.getElementById("navToggle").setAttribute("aria-expanded",open);
+});
+</script>
+</body>
+</html>
