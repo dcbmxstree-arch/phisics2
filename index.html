@@ -18,6 +18,44 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
   <link rel="stylesheet" href="style.css">
+  <style>
+    /* Metodología: 4 col desktop → 2 col tablet → 1 col móvil */
+    .metodologia-grid { grid-template-columns: repeat(4, 1fr); }
+    @media (max-width: 900px) {
+      .metodologia-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+    @media (max-width: 540px) {
+      .metodologia-grid { grid-template-columns: 1fr; }
+      .metodologia-grid .feature-card {
+        display: flex;
+        flex-direction: row;
+        align-items: flex-start;
+        gap: 0.9rem;
+        text-align: left;
+        padding: 1.1rem 1.2rem;
+      }
+      .metodologia-grid .feature-card .icon {
+        font-size: 1.6rem;
+        flex-shrink: 0;
+        margin-bottom: 0;
+        line-height: 1.4;
+      }
+      .metodologia-grid .feature-card h3 {
+        font-size: 0.92rem;
+        margin-bottom: 0.2rem;
+      }
+      .metodologia-grid .feature-card p {
+        font-size: 0.82rem;
+        line-height: 1.5;
+      }
+      /* Badge "Exclusivo" compacto */
+      .metodologia-grid .feature-card span[style*="absolute"] {
+        font-size: 0.55rem !important;
+        padding: 2px 7px !important;
+        letter-spacing: 0.5px !important;
+      }
+    }
+  </style>
 </head>
 <body>
 
@@ -42,8 +80,6 @@
         <li><a href="#inicio">Inicio</a></li>
         <li><a href="#metodologia">Metodología</a></li>
         <li><a href="#cursos">Asignaturas</a></li>
-        <li><a href="calculadora.html">Calculadora</a></li>
-        <li><a href="fluidos.html">Fluidos</a></li>
         <li><a href="#precios">Precios</a></li>
         <li><a href="#contacto">Contacto</a></li>
       </ul>
@@ -82,7 +118,7 @@
         <h2 class="section-title">Nuestra Metodología</h2>
         <p class="section-subtitle">Cada sesión combina teoría rigurosa, resolución de problemas reales y herramientas digitales que solo nuestros estudiantes usan.</p>
       </div>
-      <div class="grid grid-4" style="grid-template-columns:repeat(4,1fr);">
+      <div class="grid grid-4 metodologia-grid">
         <div class="feature-card">
           <span class="icon" aria-hidden="true">📐</span>
           <h3>Rigor Técnico</h3>
